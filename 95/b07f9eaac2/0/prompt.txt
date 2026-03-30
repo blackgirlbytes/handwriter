@@ -1,0 +1,13 @@
+are there tools that take peoples handwriting and turn it into typed text
+
+---
+
+are there any that are like mediapipe cdn but for handwriting
+
+---
+
+last time i tred tesseract..it gave me jarbled language
+
+---
+
+okay lets try  TrOCR via Transformers.js
