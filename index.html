@@ -504,19 +504,65 @@
 
     .paper-body {
       position: relative;
-      min-height: 220px;
-      white-space: pre-wrap;
+      min-height: 260px;
+      padding-top: 0.25rem;
+    }
+
+    .paper-body-lines {
+      position: relative;
+      min-height: 240px;
+      color: #282721;
+    }
+
+    .paper-body-lines.scrapbook-placeholder {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.98rem;
+      line-height: 1.7;
+      color: rgba(40, 39, 33, 0.58);
+      padding-right: 8.5rem;
+    }
+
+    .paper-photo {
+      position: absolute;
+      top: 0.4rem;
+      right: 0;
+      width: 118px;
+      height: 138px;
+      padding: 0.55rem;
+      border-radius: 14px;
+      background: #f8f0df;
+      box-shadow: 0 12px 20px rgba(24, 20, 12, 0.16);
+      transform: rotate(4deg);
+      z-index: 1;
+    }
+
+    .paper-photo-frame {
+      width: 100%;
+      height: 94px;
+      border-radius: 10px;
+      background:
+        radial-gradient(circle at 28% 28%, rgba(255, 235, 195, 0.95), transparent 24%),
+        linear-gradient(140deg, #a6c0a2, #6b8770 60%, #48606d);
+      margin-bottom: 0.6rem;
+    }
+
+    .paper-photo-label {
+      font-family: 'Special Elite', serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6a5843;
+      text-align: center;
     }
 
     .body-line {
       position: absolute;
-      left: 0;
-      right: 0;
       font-family: 'Caveat', cursive;
       font-size: 1.85rem;
       line-height: 1;
       color: #282721;
       transform-origin: left center;
+      white-space: nowrap;
     }
 
     .body-line:nth-child(odd) {
@@ -666,7 +712,13 @@
               </section>
 
               <section class="paper-note">
-                <div class="paper-body scrapbook-placeholder" id="scrapbookBody">Your recognized handwriting will be re-laid into this main note block using measured multiline layout.</div>
+                <div class="paper-body" id="scrapbookBody">
+                  <div class="paper-photo" id="scrapbookPhoto" aria-hidden="true">
+                    <div class="paper-photo-frame"></div>
+                    <div class="paper-photo-label">memory</div>
+                  </div>
+                  <div class="paper-body-lines scrapbook-placeholder" id="scrapbookBodyLines">Your recognized handwriting will be re-laid into this main note block using measured multiline layout that bends around the pinned photo block.</div>
+                </div>
               </section>
 
               <section class="paper-tag">
@@ -681,7 +733,7 @@
 
   <script src="https://unpkg.com/lucide@latest"></script>
   <script type="module">
-    import { prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/pretext@0.0.3';
+    import { prepareWithSegments, layoutNextLine } from 'https://esm.sh/@chenglou/pretext@0.0.3';
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -706,9 +758,11 @@
     const scrapbookPanel = document.getElementById('scrapbookPanel');
     const scrapbookTitleEl = document.getElementById('scrapbookTitle');
     const scrapbookBodyEl = document.getElementById('scrapbookBody');
+    const scrapbookBodyLinesEl = document.getElementById('scrapbookBodyLines');
     const scrapbookCaptionEl = document.getElementById('scrapbookCaption');
     const scrapbookBadgeEl = document.getElementById('scrapbookBadge');
     const scrapbookDateEl = document.getElementById('scrapbookDate');
+    const scrapbookPhotoEl = document.getElementById('scrapbookPhoto');
 
     // Stroke data: array of strokes, each stroke is [xArray, yArray, timeArray]
     let trace = [];
@@ -827,9 +881,7 @@
       clearTimeout(recognizeTimer);
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      resultEl.textContent = 'Recognized text will appear here...';
-      resultEl.classList.add('placeholder');
-      statusEl.textContent = '';
+      resetResult();
     });
 
     // --- Undo ---
@@ -841,8 +893,7 @@
       if (trace.length > 0) {
         recognizeTimer = setTimeout(recognize, 500);
       } else {
-        resultEl.textContent = 'Recognized text will appear here...';
-        resultEl.classList.add('placeholder');
+        resetResult();
       }
     });
 
@@ -951,7 +1002,7 @@
       const content = buildScrapbookContent(cleaned);
 
       scrapbookTitleEl.classList.remove('scrapbook-placeholder');
-      scrapbookBodyEl.classList.remove('scrapbook-placeholder');
+      scrapbookBodyLinesEl.classList.remove('scrapbook-placeholder');
       scrapbookCaptionEl.classList.remove('scrapbook-placeholder');
       scrapbookBadgeEl.textContent = currentMode === 'upload' ? 'From uploaded handwriting' : 'From live handwriting';
       scrapbookDateEl.textContent = new Date().toLocaleDateString(undefined, {
@@ -966,23 +1017,21 @@
         document.fonts.load(CAPTION_FONT)
       ]);
 
-      layoutTextIntoElement(scrapbookTitleEl, content.title, TITLE_FONT, TITLE_LINE_HEIGHT, 2, 'paper-title-line');
-      layoutTextIntoElement(scrapbookBodyEl, content.body, BODY_FONT, BODY_LINE_HEIGHT, 8, 'body-line');
-      layoutTextIntoElement(scrapbookCaptionEl, content.caption, CAPTION_FONT, CAPTION_LINE_HEIGHT, 3, 'paper-caption-line');
+      scrapbookTitleEl.textContent = content.title;
+      scrapbookCaptionEl.textContent = content.caption;
+      renderObstacleWrappedBody(content.body);
     }
 
     function renderScrapbookPlaceholder() {
       scrapbookBadgeEl.textContent = 'Waiting for handwriting';
       scrapbookDateEl.textContent = 'Ready to compose';
       scrapbookTitleEl.textContent = 'Upload a note or draw a phrase, then open this tab to see the first scrapbook composition.';
-      scrapbookBodyEl.textContent = 'Your recognized handwriting will be re-laid into this main note block using measured multiline layout.';
+      scrapbookBodyLinesEl.textContent = 'Your recognized handwriting will be re-laid into this main note block using measured multiline layout that bends around the pinned photo block.';
       scrapbookCaptionEl.textContent = 'This tag becomes a quick summary strip built from the same OCR text.';
       scrapbookTitleEl.classList.add('scrapbook-placeholder');
-      scrapbookBodyEl.classList.add('scrapbook-placeholder');
+      scrapbookBodyLinesEl.classList.add('scrapbook-placeholder');
       scrapbookCaptionEl.classList.add('scrapbook-placeholder');
-      scrapbookBodyEl.style.height = '';
-      scrapbookTitleEl.style.height = '';
-      scrapbookCaptionEl.style.height = '';
+      scrapbookBodyLinesEl.style.height = '';
     }
 
     function buildScrapbookContent(text) {
@@ -1009,32 +1058,62 @@
       };
     }
 
-    function layoutTextIntoElement(element, text, font, lineHeight, maxLines, lineClassName) {
-      const width = Math.max(120, Math.floor(element.clientWidth || element.getBoundingClientRect().width || 280));
-      const prepared = prepareWithSegments(text, font, { whiteSpace: 'pre-wrap' });
-      const { lines } = layoutWithLines(prepared, width, lineHeight);
-      const visibleLines = lines.slice(0, maxLines);
-      const hasOverflow = lines.length > maxLines;
+    function renderObstacleWrappedBody(text) {
+      const bodyWidth = Math.max(180, Math.floor(scrapbookBodyEl.clientWidth || scrapbookBodyEl.getBoundingClientRect().width || 320));
+      const photoWidth = Math.ceil(scrapbookPhotoEl.offsetWidth || 118);
+      const photoTop = Math.ceil(scrapbookPhotoEl.offsetTop || 0);
+      const photoBottom = photoTop + Math.ceil(scrapbookPhotoEl.offsetHeight || 138);
+      const gap = 16;
+      const maxLines = 9;
+      const prepared = prepareWithSegments(text, BODY_FONT, { whiteSpace: 'pre-wrap' });
+      const lines = [];
+      let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+      let y = 0;
 
-      element.innerHTML = '';
+      scrapbookBodyLinesEl.innerHTML = '';
 
-      visibleLines.forEach((line, index) => {
+      for (let index = 0; index < maxLines; index++) {
+        const spec = getBodyLineSpec(y, bodyWidth, photoTop, photoBottom, photoWidth, gap);
+        const line = layoutNextLine(prepared, cursor, spec.width);
+        if (!line) break;
+
+        lines.push({ ...line, ...spec, top: y });
+        cursor = line.end;
+        y += BODY_LINE_HEIGHT;
+      }
+
+      const overflowSpec = getBodyLineSpec(y, bodyWidth, photoTop, photoBottom, photoWidth, gap);
+      const hasOverflow = lines.length === maxLines && layoutNextLine(prepared, cursor, overflowSpec.width) !== null;
+
+      lines.forEach((line, index) => {
         const div = document.createElement('div');
-        div.className = lineClassName;
+        div.className = 'body-line';
         let lineText = line.text;
-        if (hasOverflow && index === visibleLines.length - 1) {
+
+        if (hasOverflow && index === lines.length - 1) {
           lineText = `${lineText.replace(/[.,;:!?-]*$/, '').trimEnd()}...`;
         }
+
         div.textContent = lineText;
-        div.style.top = `${index * lineHeight}px`;
-        element.appendChild(div);
+        div.style.top = `${line.top}px`;
+        div.style.left = `${line.left}px`;
+        div.style.width = `${line.width}px`;
+        scrapbookBodyLinesEl.appendChild(div);
       });
 
-      element.style.height = `${Math.max(visibleLines.length, 1) * lineHeight}px`;
+      scrapbookBodyLinesEl.style.height = `${Math.max(y, photoBottom + 6, 220)}px`;
+    }
 
-      if (visibleLines.length === 0) {
-        element.textContent = text;
-      }
+    function getBodyLineSpec(y, bodyWidth, photoTop, photoBottom, photoWidth, gap) {
+      const besidePhoto = y >= photoTop && y < photoBottom + 4;
+      const width = besidePhoto
+        ? Math.max(120, bodyWidth - photoWidth - gap)
+        : bodyWidth;
+
+      return {
+        left: 0,
+        width
+      };
     }
 
     // --- Recognize via Google Input Tools ---
