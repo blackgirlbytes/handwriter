@@ -654,6 +654,7 @@
       <div class="mode-switcher">
         <button class="mode-btn active" id="drawModeBtn">Draw</button>
         <button class="mode-btn" id="uploadModeBtn">Upload Image</button>
+        <button class="mode-btn" id="cameraModeBtn">Camera</button>
       </div>
 
       <div class="input-panel active" id="drawPanel">
@@ -669,7 +670,6 @@
             <i data-lucide="image-up"></i>
             <span>Choose a handwritten image or drag it here</span>
           </div>
-          <video id="cameraPreview" class="camera-preview" autoplay playsinline muted hidden></video>
           <img id="imagePreview" alt="Uploaded handwriting preview" hidden>
         </label>
         <input class="upload-input" id="imageInput" type="file" accept="image/*">
@@ -677,12 +677,23 @@
           <button id="chooseImageBtn" class="primary">Choose Image</button>
           <button id="clearImageBtn">Clear Image</button>
         </div>
+        <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
+      </div>
+
+      <div class="input-panel" id="cameraPanel">
+        <div class="upload-dropzone has-image">
+          <div class="upload-placeholder" id="cameraPlaceholder">
+            <i data-lucide="camera"></i>
+            <span>Open the camera, hold up your handwriting, then take a photo</span>
+          </div>
+          <video id="cameraPreview" class="camera-preview" autoplay playsinline muted hidden></video>
+        </div>
         <div class="upload-actions camera-actions">
-          <button id="startCameraBtn">Open Camera</button>
-          <button id="capturePhotoBtn" class="primary">Take Photo</button>
+          <button id="startCameraBtn" class="primary">Open Camera</button>
+          <button id="capturePhotoBtn">Take Photo</button>
           <button id="stopCameraBtn">Stop Camera</button>
         </div>
-        <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
+        <p class="hint">The app prefers the rear camera so handwriting is not mirrored like a selfie preview.</p>
       </div>
 
       <div class="buttons" id="drawButtons">
@@ -742,14 +753,17 @@
     const undoBtn = document.getElementById('undoBtn');
     const drawModeBtn = document.getElementById('drawModeBtn');
     const uploadModeBtn = document.getElementById('uploadModeBtn');
+    const cameraModeBtn = document.getElementById('cameraModeBtn');
     const drawPanel = document.getElementById('drawPanel');
     const uploadPanel = document.getElementById('uploadPanel');
+    const cameraPanel = document.getElementById('cameraPanel');
     const drawButtons = document.getElementById('drawButtons');
     const imageInput = document.getElementById('imageInput');
     const chooseImageBtn = document.getElementById('chooseImageBtn');
     const clearImageBtn = document.getElementById('clearImageBtn');
     const uploadDropzone = document.getElementById('uploadDropzone');
     const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const cameraPlaceholder = document.getElementById('cameraPlaceholder');
     const cameraPreview = document.getElementById('cameraPreview');
     const imagePreview = document.getElementById('imagePreview');
     const startCameraBtn = document.getElementById('startCameraBtn');
@@ -855,6 +869,7 @@
 
     drawModeBtn.addEventListener('click', () => setMode('draw'));
     uploadModeBtn.addEventListener('click', () => setMode('upload'));
+    cameraModeBtn.addEventListener('click', () => setMode('camera'));
     transcriptTab.addEventListener('click', () => setOutputView('transcript'));
     scrapbookTab.addEventListener('click', () => setOutputView('scrapbook'));
     addShapeBtn.addEventListener('click', () => {
@@ -868,13 +883,15 @@
 
     function setMode(mode) {
       currentMode = mode;
-      if (mode !== 'upload') {
+      if (mode !== 'camera') {
         stopCamera();
       }
       drawModeBtn.classList.toggle('active', mode === 'draw');
       uploadModeBtn.classList.toggle('active', mode === 'upload');
+      cameraModeBtn.classList.toggle('active', mode === 'camera');
       drawPanel.classList.toggle('active', mode === 'draw');
       uploadPanel.classList.toggle('active', mode === 'upload');
+      cameraPanel.classList.toggle('active', mode === 'camera');
       drawButtons.style.display = mode === 'draw' ? 'flex' : 'none';
       statusEl.textContent = '';
     }
@@ -980,7 +997,7 @@
 
     async function startCamera() {
       try {
-        setMode('upload');
+        setMode('camera');
         stopCamera();
         cameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -990,10 +1007,9 @@
         });
         cameraPreview.srcObject = cameraStream;
         cameraPreview.hidden = false;
+        cameraPlaceholder.hidden = true;
         imagePreview.hidden = true;
         imagePreview.removeAttribute('src');
-        uploadPlaceholder.hidden = true;
-        uploadDropzone.classList.add('has-image');
         statusEl.textContent = 'Camera ready. Hold up your handwriting and capture a photo.';
       } catch (error) {
         statusEl.textContent = `Camera unavailable: ${error.message}`;
@@ -1007,6 +1023,7 @@
       }
       cameraPreview.srcObject = null;
       cameraPreview.hidden = true;
+      cameraPlaceholder.hidden = false;
     }
 
     async function captureCameraFrame() {
@@ -1023,6 +1040,7 @@
       const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.92);
 
       stopCamera();
+      setMode('upload');
       uploadedImageDataUrl = imageDataUrl;
       imagePreview.src = imageDataUrl;
       imagePreview.hidden = false;
