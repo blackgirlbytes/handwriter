@@ -430,6 +430,7 @@
       white-space: nowrap;
       color: #403729;
       opacity: 0.95;
+      pointer-events: none;
     }
 
     .background-placeholder {
@@ -932,7 +933,7 @@
       const pageHeight = Math.max(520, Math.floor(scrapbookPageEl.clientHeight - 92));
       const prepared = prepareWithSegments(BACKGROUND_TEXT, STORY_FONT, { whiteSpace: 'normal' });
       const obstacles = getObstacleRects();
-      const lines = [];
+      const fragments = [];
       let cursor = { segmentIndex: 0, graphemeIndex: 0 };
       let y = 18;
       let guard = 0;
@@ -941,16 +942,33 @@
 
       while (guard < 80) {
         guard += 1;
-        const span = getAvailableSpan(obstacles, y, surfaceWidth);
-        const line = layoutNextLine(prepared, cursor, span.width);
-        if (!line) break;
-        lines.push({ line, left: span.left, top: y, width: span.width });
-        cursor = line.end;
+        const gaps = getAvailableGaps(obstacles, y, surfaceWidth);
+        let placedOnRow = false;
+
+        for (const gap of gaps) {
+          if (gap.width < 56) continue;
+          const line = layoutNextLine(prepared, cursor, gap.width);
+          if (!line) break;
+          fragments.push({ line, left: gap.left, top: y, width: gap.width });
+          cursor = line.end;
+          placedOnRow = true;
+        }
+
+        if (!placedOnRow) {
+          y += STORY_LINE_HEIGHT;
+          if (y > pageHeight - STORY_LINE_HEIGHT) break;
+          continue;
+        }
+
+        if (layoutNextLine(prepared, cursor, surfaceWidth - 28) === null) {
+          break;
+        }
+
         y += STORY_LINE_HEIGHT;
         if (y > pageHeight - STORY_LINE_HEIGHT) break;
       }
 
-      if (lines.length === 0) {
+      if (fragments.length === 0) {
         const placeholder = document.createElement('div');
         placeholder.className = 'background-placeholder';
         placeholder.textContent = 'Upload handwriting and convert it into shapes. Then drag them around this page to watch the background writing reflow around each obstacle.';
@@ -958,7 +976,7 @@
         return;
       }
 
-      lines.forEach(({ line, left, top, width }, index) => {
+      fragments.forEach(({ line, left, top, width }, index) => {
         const div = document.createElement('div');
         div.className = 'background-line';
         div.textContent = line.text;
@@ -976,14 +994,14 @@
 
     function getObstacleRects() {
       return shapes.map(shape => ({
-        left: shape.x,
-        right: shape.x + shape.width,
-        top: shape.y,
-        bottom: shape.y + shape.height
+        left: shape.x - 14,
+        right: shape.x + shape.width + 14,
+        top: shape.y - 10,
+        bottom: shape.y + shape.height + 10
       }));
     }
 
-    function getAvailableSpan(obstacles, y, totalWidth) {
+    function getAvailableGaps(obstacles, y, totalWidth) {
       const horizontalPadding = 14;
       const rowTop = y;
       const rowBottom = y + STORY_LINE_HEIGHT - 6;
@@ -992,13 +1010,13 @@
       ));
 
       if (overlapping.length === 0) {
-        return { left: horizontalPadding, width: totalWidth - horizontalPadding * 2 };
+        return [{ left: horizontalPadding, width: totalWidth - horizontalPadding * 2 }];
       }
 
       const intervals = overlapping
         .map((obstacle) => ({
-          start: Math.max(horizontalPadding, obstacle.left - 10),
-          end: Math.min(totalWidth - horizontalPadding, obstacle.right + 10)
+          start: Math.max(horizontalPadding, obstacle.left),
+          end: Math.min(totalWidth - horizontalPadding, obstacle.right)
         }))
         .sort((a, b) => a.start - b.start);
 
@@ -1017,10 +1035,10 @@
       }
 
       if (gaps.length === 0) {
-        return { left: horizontalPadding, width: Math.max(120, totalWidth - horizontalPadding * 2) };
+        return [];
       }
 
-      return gaps.reduce((largest, gap) => gap.width > largest.width ? gap : largest);
+      return gaps;
     }
 
     function renderShapes() {
