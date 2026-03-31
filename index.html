@@ -314,7 +314,7 @@
 
     .scrapbook-stage {
       position: relative;
-      min-height: 720px;
+      min-height: 780px;
       border-radius: 28px;
       padding: 1.25rem;
       overflow: hidden;
@@ -328,12 +328,12 @@
     .scrapbook-stage::after {
       content: '';
       position: absolute;
-      inset: auto;
       width: 180px;
       height: 180px;
       border-radius: 999px;
       filter: blur(10px);
       opacity: 0.35;
+      pointer-events: none;
     }
 
     .scrapbook-stage::before {
@@ -348,42 +348,54 @@
       background: rgba(111, 143, 114, 0.12);
     }
 
-    .scrapbook-card {
+    .scrapbook-toolbar {
       position: relative;
-      width: min(100%, 640px);
-      min-height: 640px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .scrapbook-page {
+      position: relative;
+      width: min(100%, 680px);
+      min-height: 680px;
       margin: 0 auto;
-      border-radius: 34px;
-      padding: 2rem 1.5rem 1.75rem;
+      padding: 1.5rem;
+      border-radius: 30px;
       background:
-        radial-gradient(circle at top left, rgba(255, 255, 255, 0.28), transparent 32%),
-        linear-gradient(180deg, #325764 0%, #284651 100%);
+        linear-gradient(to bottom, rgba(58, 84, 116, 0.06) 0, rgba(58, 84, 116, 0.06) 1px, transparent 1px, transparent 35px),
+        linear-gradient(to right, transparent 0, transparent 42px, rgba(220, 85, 84, 0.16) 42px, rgba(220, 85, 84, 0.16) 43px, transparent 43px),
+        #f6eddb;
+      background-size: 100% 35px, 100% 100%;
       box-shadow:
         0 24px 60px rgba(5, 12, 15, 0.36),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
       overflow: hidden;
     }
 
-    .scrapbook-card::before {
+    .scrapbook-page::before {
       content: '';
       position: absolute;
       inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-      background-size: 28px 28px;
-      opacity: 0.18;
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.35), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(203, 180, 134, 0.18), transparent 24%);
       pointer-events: none;
     }
 
     .scrapbook-meta {
       position: relative;
+      z-index: 2;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
-      margin-bottom: 1.5rem;
-      z-index: 1;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
 
     .scrapbook-badge,
@@ -398,26 +410,69 @@
       text-transform: uppercase;
     }
 
-    .scrapbook-cluster {
+    .scrapbook-surface {
       position: relative;
+      min-height: 560px;
       z-index: 1;
-      display: grid;
-      gap: 1.1rem;
-      justify-items: start;
     }
 
-    .paper-strip,
-    .paper-note,
-    .paper-tag {
+    .background-story {
       position: relative;
-      box-shadow: 0 18px 28px rgba(8, 16, 21, 0.18);
-      border: 1px solid rgba(115, 84, 44, 0.12);
-      color: #2b2b25;
+      min-height: 560px;
+      color: #403729;
     }
 
-    .paper-strip::before,
-    .paper-note::before,
-    .paper-tag::before {
+    .background-line {
+      position: absolute;
+      font-family: 'Caveat', cursive;
+      font-size: 1.65rem;
+      line-height: 1;
+      white-space: nowrap;
+      color: #403729;
+      opacity: 0.95;
+    }
+
+    .background-placeholder {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: rgba(64, 55, 41, 0.58);
+      max-width: 34ch;
+      padding-left: 1rem;
+      padding-top: 0.75rem;
+    }
+
+    .floating-shapes {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+    }
+
+    .shape-card {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 16px 28px rgba(24, 20, 12, 0.18);
+      color: #2b2b25;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .shape-card.is-dragging {
+      cursor: grabbing;
+      box-shadow: 0 20px 34px rgba(24, 20, 12, 0.24);
+    }
+
+    .shape-card.sticky,
+    .shape-card.circle,
+    .shape-card.heart {
+      position: relative;
+      border: 1px solid rgba(115, 84, 44, 0.12);
+    }
+
+    .shape-card::before {
       content: '';
       position: absolute;
       inset: 0;
@@ -425,172 +480,62 @@
       pointer-events: none;
     }
 
-    .paper-strip {
-      width: min(78%, 360px);
-      min-height: 100px;
-      padding: 1rem 1.1rem;
+    .shape-card.sticky {
+      width: 152px;
+      min-height: 132px;
       background: #f2d89f;
       border-radius: 18px 24px 18px 20px;
       transform: rotate(-3deg);
     }
 
-    .paper-note {
-      width: min(88%, 440px);
-      background:
-        linear-gradient(to bottom, rgba(52, 82, 112, 0.1) 0, rgba(52, 82, 112, 0.1) 1px, transparent 1px, transparent 34px),
-        var(--paper);
-      background-size: 100% 35px;
-      border-radius: 22px;
-      padding: 1.35rem 1.35rem 1.1rem;
-      transform: rotate(1.5deg);
-    }
-
-    .paper-tag {
-      width: min(60%, 260px);
-      min-height: 90px;
-      padding: 0.9rem 1rem;
-      background: #d6e0ca;
-      border-radius: 14px 18px 14px 18px;
-      transform: rotate(-4deg);
-      margin-left: auto;
-      margin-right: 1rem;
-    }
-
-    .tape {
-      position: absolute;
-      width: 92px;
-      height: 28px;
-      background: rgba(247, 242, 232, 0.32);
-      border: 1px solid rgba(255, 244, 224, 0.28);
-      box-shadow: 0 8px 18px rgba(8, 16, 21, 0.16);
-      backdrop-filter: blur(2px);
-      z-index: 2;
-    }
-
-    .tape-a {
-      top: 82px;
-      left: 36px;
-      transform: rotate(-8deg);
-    }
-
-    .tape-b {
-      top: 220px;
-      right: 56px;
-      transform: rotate(12deg);
-    }
-
-    .pushpin {
-      position: absolute;
-      top: 24px;
-      right: 34px;
-      width: 20px;
-      height: 20px;
+    .shape-card.circle {
+      width: 144px;
+      min-height: 144px;
+      background: #d8e2d0;
       border-radius: 999px;
-      background: var(--accent-coral);
-      box-shadow:
-        inset 0 2px 0 rgba(255, 255, 255, 0.32),
-        0 10px 16px rgba(8, 16, 21, 0.28);
-      z-index: 2;
-    }
-
-    .paper-title {
-      position: relative;
-      font-family: 'Special Elite', serif;
-      font-size: 1.05rem;
-      line-height: 1.4;
-      min-height: 3rem;
-      white-space: pre-wrap;
-    }
-
-    .paper-body {
-      position: relative;
-      min-height: 260px;
-      padding-top: 0.25rem;
-    }
-
-    .paper-body-lines {
-      position: relative;
-      min-height: 240px;
-      color: #282721;
-    }
-
-    .paper-body-lines.scrapbook-placeholder {
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 0.98rem;
-      line-height: 1.7;
-      color: rgba(40, 39, 33, 0.58);
-      padding-right: 8.5rem;
-    }
-
-    .paper-photo {
-      position: absolute;
-      top: 0.4rem;
-      right: 0;
-      width: 118px;
-      height: 138px;
-      padding: 0.55rem;
-      border-radius: 14px;
-      background: #f8f0df;
-      box-shadow: 0 12px 20px rgba(24, 20, 12, 0.16);
-      transform: rotate(4deg);
-      z-index: 1;
-    }
-
-    .paper-photo-frame {
-      width: 100%;
-      height: 94px;
-      border-radius: 10px;
-      background:
-        radial-gradient(circle at 28% 28%, rgba(255, 235, 195, 0.95), transparent 24%),
-        linear-gradient(140deg, #a6c0a2, #6b8770 60%, #48606d);
-      margin-bottom: 0.6rem;
-    }
-
-    .paper-photo-label {
-      font-family: 'Special Elite', serif;
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #6a5843;
+      transform: rotate(6deg);
       text-align: center;
     }
 
-    .body-line {
-      position: absolute;
-      font-family: 'Caveat', cursive;
-      font-size: 1.85rem;
-      line-height: 1;
-      color: #282721;
-      transform-origin: left center;
-      white-space: nowrap;
+    .shape-card.heart {
+      width: 160px;
+      min-height: 144px;
+      background: #edc6bf;
+      clip-path: path('M80 142 C65 126 20 95 20 56 C20 32 37 18 56 18 C69 18 78 26 80 35 C82 26 91 18 104 18 C123 18 140 32 140 56 C140 95 95 126 80 142 Z');
+      transform: rotate(-5deg);
+      padding: 2rem 1.25rem 1rem;
+      text-align: center;
     }
 
-    .body-line:nth-child(odd) {
-      transform: rotate(-0.4deg);
+    .shape-card.heart::before {
+      clip-path: inherit;
     }
 
-    .body-line:nth-child(even) {
-      transform: rotate(0.35deg);
-    }
-
-    .paper-caption {
+    .shape-card-title {
       position: relative;
+      z-index: 1;
+      font-family: 'Special Elite', serif;
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(64, 55, 41, 0.72);
+      margin-bottom: 0.5rem;
+    }
+
+    .shape-card-text {
+      position: relative;
+      z-index: 1;
       font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 0.88rem;
-      line-height: 1.5;
-      color: #233d2f;
-      white-space: pre-wrap;
+      font-size: 0.9rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
     }
 
-    .paper-title-line,
-    .paper-caption-line {
-      position: absolute;
-      left: 0;
-      right: 0;
-    }
-
-    .scrapbook-placeholder {
-      color: rgba(40, 39, 33, 0.55);
+    .scrapbook-empty-tip {
+      color: rgba(64, 55, 41, 0.6);
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      text-align: center;
     }
 
     @media (max-width: 960px) {
@@ -617,20 +562,8 @@
         flex-direction: column;
       }
 
-      .scrapbook-card {
-        padding: 1.35rem 1rem 1.2rem;
-        min-height: 580px;
-      }
-
-      .paper-strip,
-      .paper-note,
-      .paper-tag {
-        width: 100%;
-        margin-right: 0;
-      }
-
-      .paper-tag {
-        margin-left: 0;
+      .scrapbook-page {
+        padding: 1rem;
       }
     }
   </style>
@@ -696,34 +629,20 @@
 
       <div class="output-panel" id="scrapbookPanel">
         <div class="scrapbook-stage">
-          <article class="scrapbook-card" id="scrapbookCard">
-            <div class="pushpin"></div>
-            <div class="tape tape-a"></div>
-            <div class="tape tape-b"></div>
+          <div class="scrapbook-toolbar">
+            <button id="addShapeBtn" class="primary">Make Shape From Transcript</button>
+            <div class="scrapbook-empty-tip">Drag shapes around the page and watch the background writing route around them.</div>
+          </div>
 
+          <article class="scrapbook-page" id="scrapbookPage">
             <div class="scrapbook-meta">
               <div class="scrapbook-badge" id="scrapbookBadge">Waiting for handwriting</div>
-              <div class="scrapbook-date" id="scrapbookDate">Ready to compose</div>
+              <div class="scrapbook-date" id="scrapbookDate">No floating shapes yet</div>
             </div>
 
-            <div class="scrapbook-cluster">
-              <section class="paper-strip">
-                <div class="paper-title scrapbook-placeholder" id="scrapbookTitle">Upload a note or draw a phrase, then open this tab to see the first scrapbook composition.</div>
-              </section>
-
-              <section class="paper-note">
-                <div class="paper-body" id="scrapbookBody">
-                  <div class="paper-photo" id="scrapbookPhoto" aria-hidden="true">
-                    <div class="paper-photo-frame"></div>
-                    <div class="paper-photo-label">memory</div>
-                  </div>
-                  <div class="paper-body-lines scrapbook-placeholder" id="scrapbookBodyLines">Your recognized handwriting will be re-laid into this main note block using measured multiline layout that bends around the pinned photo block.</div>
-                </div>
-              </section>
-
-              <section class="paper-tag">
-                <div class="paper-caption scrapbook-placeholder" id="scrapbookCaption">This tag becomes a quick summary strip built from the same OCR text.</div>
-              </section>
+            <div class="scrapbook-surface">
+              <div class="background-story" id="backgroundStory"></div>
+              <div class="floating-shapes" id="floatingShapes"></div>
             </div>
           </article>
         </div>
@@ -756,13 +675,12 @@
     const scrapbookTab = document.getElementById('scrapbookTab');
     const transcriptPanel = document.getElementById('transcriptPanel');
     const scrapbookPanel = document.getElementById('scrapbookPanel');
-    const scrapbookTitleEl = document.getElementById('scrapbookTitle');
-    const scrapbookBodyEl = document.getElementById('scrapbookBody');
-    const scrapbookBodyLinesEl = document.getElementById('scrapbookBodyLines');
-    const scrapbookCaptionEl = document.getElementById('scrapbookCaption');
     const scrapbookBadgeEl = document.getElementById('scrapbookBadge');
     const scrapbookDateEl = document.getElementById('scrapbookDate');
-    const scrapbookPhotoEl = document.getElementById('scrapbookPhoto');
+    const scrapbookPageEl = document.getElementById('scrapbookPage');
+    const backgroundStoryEl = document.getElementById('backgroundStory');
+    const floatingShapesEl = document.getElementById('floatingShapes');
+    const addShapeBtn = document.getElementById('addShapeBtn');
 
     // Stroke data: array of strokes, each stroke is [xArray, yArray, timeArray]
     let trace = [];
@@ -772,13 +690,13 @@
     let currentMode = 'draw';
     let uploadedImageDataUrl = null;
     let latestRecognizedText = '';
+    let shapes = [];
+    let dragState = null;
 
-    const BODY_FONT = '28px Caveat';
-    const BODY_LINE_HEIGHT = 35;
-    const TITLE_FONT = '20px "Special Elite"';
-    const TITLE_LINE_HEIGHT = 28;
-    const CAPTION_FONT = '15px "IBM Plex Sans"';
-    const CAPTION_LINE_HEIGHT = 23;
+    const STORY_FONT = '26px Caveat';
+    const STORY_LINE_HEIGHT = 33;
+    const SHAPE_TYPES = ['sticky', 'circle', 'heart'];
+    const BACKGROUND_TEXT = `The page begins with a quiet stream of writing, the kind that feels like a journal entry already living on the paper before anything new arrives. Then the uploaded handwriting comes in like found fragments, little memories that can be turned into floating keepsakes. Move them around and the rest of the page keeps adjusting, making room as if the paper itself is thinking about composition in real time. This is where pretext starts to feel useful instead of theoretical, because every line can become narrower or wider depending on what is drifting through the page.`;
 
     lucide.createIcons();
 
@@ -844,10 +762,13 @@
     uploadModeBtn.addEventListener('click', () => setMode('upload'));
     transcriptTab.addEventListener('click', () => setOutputView('transcript'));
     scrapbookTab.addEventListener('click', () => setOutputView('scrapbook'));
+    addShapeBtn.addEventListener('click', () => {
+      if (!latestRecognizedText.trim()) return;
+      createShapeFromText(latestRecognizedText);
+      setOutputView('scrapbook');
+    });
     window.addEventListener('resize', () => {
-      if (latestRecognizedText) {
-        updateScrapbook(latestRecognizedText);
-      }
+      renderScrapbook();
     });
 
     function setMode(mode) {
@@ -869,8 +790,8 @@
       transcriptPanel.classList.toggle('active', showTranscript);
       scrapbookPanel.classList.toggle('active', !showTranscript);
 
-      if (!showTranscript && latestRecognizedText) {
-        updateScrapbook(latestRecognizedText);
+      if (!showTranscript) {
+        renderScrapbook();
       }
     }
 
@@ -940,7 +861,7 @@
       resultEl.textContent = 'Recognized text will appear here...';
       resultEl.classList.add('placeholder');
       statusEl.textContent = '';
-      renderScrapbookPlaceholder();
+      renderScrapbook();
     }
 
     function clearImage() {
@@ -988,132 +909,220 @@
       statusEl.textContent = alternatives.length > 0
         ? `Also matched: ${alternatives.slice(0, 3).join(', ')}`
         : '';
-      updateScrapbook(text);
+      addShapeBtn.disabled = !text.trim();
     }
 
-    async function updateScrapbook(text) {
-      const cleaned = text.trim();
+    async function renderScrapbook() {
+      await document.fonts.load(STORY_FONT);
 
-      if (!cleaned) {
-        renderScrapbookPlaceholder();
+      scrapbookBadgeEl.textContent = latestRecognizedText.trim()
+        ? currentMode === 'upload' ? 'Latest source: uploaded handwriting' : 'Latest source: live handwriting'
+        : 'Waiting for handwriting';
+      scrapbookDateEl.textContent = shapes.length > 0
+        ? `${shapes.length} movable ${shapes.length === 1 ? 'shape' : 'shapes'}`
+        : 'No floating shapes yet';
+      addShapeBtn.disabled = !latestRecognizedText.trim();
+
+      renderBackgroundStory();
+      renderShapes();
+    }
+
+    function renderBackgroundStory() {
+      const surfaceWidth = Math.max(280, Math.floor(scrapbookPageEl.clientWidth - 48));
+      const pageHeight = Math.max(520, Math.floor(scrapbookPageEl.clientHeight - 92));
+      const prepared = prepareWithSegments(BACKGROUND_TEXT, STORY_FONT, { whiteSpace: 'normal' });
+      const obstacles = getObstacleRects();
+      const lines = [];
+      let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+      let y = 18;
+      let guard = 0;
+
+      backgroundStoryEl.innerHTML = '';
+
+      while (guard < 80) {
+        guard += 1;
+        const span = getAvailableSpan(obstacles, y, surfaceWidth);
+        const line = layoutNextLine(prepared, cursor, span.width);
+        if (!line) break;
+        lines.push({ line, left: span.left, top: y, width: span.width });
+        cursor = line.end;
+        y += STORY_LINE_HEIGHT;
+        if (y > pageHeight - STORY_LINE_HEIGHT) break;
+      }
+
+      if (lines.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'background-placeholder';
+        placeholder.textContent = 'Upload handwriting and convert it into shapes. Then drag them around this page to watch the background writing reflow around each obstacle.';
+        backgroundStoryEl.appendChild(placeholder);
         return;
       }
 
-      const content = buildScrapbookContent(cleaned);
-
-      scrapbookTitleEl.classList.remove('scrapbook-placeholder');
-      scrapbookBodyLinesEl.classList.remove('scrapbook-placeholder');
-      scrapbookCaptionEl.classList.remove('scrapbook-placeholder');
-      scrapbookBadgeEl.textContent = currentMode === 'upload' ? 'From uploaded handwriting' : 'From live handwriting';
-      scrapbookDateEl.textContent = new Date().toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
+      lines.forEach(({ line, left, top, width }, index) => {
+        const div = document.createElement('div');
+        div.className = 'background-line';
+        div.textContent = line.text;
+        div.style.left = `${left}px`;
+        div.style.top = `${top}px`;
+        div.style.width = `${width}px`;
+        if (index % 2 === 0) {
+          div.style.transform = 'rotate(-0.35deg)';
+        } else {
+          div.style.transform = 'rotate(0.25deg)';
+        }
+        backgroundStoryEl.appendChild(div);
       });
-
-      await Promise.all([
-        document.fonts.load(TITLE_FONT),
-        document.fonts.load(BODY_FONT),
-        document.fonts.load(CAPTION_FONT)
-      ]);
-
-      scrapbookTitleEl.textContent = content.title;
-      scrapbookCaptionEl.textContent = content.caption;
-      renderObstacleWrappedBody(content.body);
     }
 
-    function renderScrapbookPlaceholder() {
-      scrapbookBadgeEl.textContent = 'Waiting for handwriting';
-      scrapbookDateEl.textContent = 'Ready to compose';
-      scrapbookTitleEl.textContent = 'Upload a note or draw a phrase, then open this tab to see the first scrapbook composition.';
-      scrapbookBodyLinesEl.textContent = 'Your recognized handwriting will be re-laid into this main note block using measured multiline layout that bends around the pinned photo block.';
-      scrapbookCaptionEl.textContent = 'This tag becomes a quick summary strip built from the same OCR text.';
-      scrapbookTitleEl.classList.add('scrapbook-placeholder');
-      scrapbookBodyLinesEl.classList.add('scrapbook-placeholder');
-      scrapbookCaptionEl.classList.add('scrapbook-placeholder');
-      scrapbookBodyLinesEl.style.height = '';
+    function getObstacleRects() {
+      return shapes.map(shape => ({
+        left: shape.x,
+        right: shape.x + shape.width,
+        top: shape.y,
+        bottom: shape.y + shape.height
+      }));
     }
 
-    function buildScrapbookContent(text) {
-      const normalized = text.replace(/\s+/g, ' ').trim();
-      const sentenceParts = normalized.split(/(?<=[.!?])\s+/).filter(Boolean);
-      const words = normalized.split(' ').filter(Boolean);
-      const title = sentenceParts[0] && sentenceParts[0].length <= 56
-        ? sentenceParts[0]
-        : words.slice(0, Math.min(6, words.length)).join(' ');
-      const bodySource = normalized.startsWith(title)
-        ? normalized.slice(title.length).trim()
-        : normalized;
-      const body = bodySource || normalized;
-      const previewWords = body.split(' ').filter(Boolean);
-      const captionSource = previewWords.slice(0, Math.min(14, previewWords.length)).join(' ');
-      const caption = captionSource
-        ? `${captionSource}${previewWords.length > 14 ? '...' : ''}`
-        : 'Captured and recomposed from your handwriting.';
+    function getAvailableSpan(obstacles, y, totalWidth) {
+      const horizontalPadding = 14;
+      const rowTop = y;
+      const rowBottom = y + STORY_LINE_HEIGHT - 6;
+      const overlapping = obstacles.filter((obstacle) => (
+        rowBottom > obstacle.top && rowTop < obstacle.bottom
+      ));
 
-      return {
-        title,
-        body,
-        caption: `Scrapbook note: ${caption}`
-      };
-    }
-
-    function renderObstacleWrappedBody(text) {
-      const bodyWidth = Math.max(180, Math.floor(scrapbookBodyEl.clientWidth || scrapbookBodyEl.getBoundingClientRect().width || 320));
-      const photoWidth = Math.ceil(scrapbookPhotoEl.offsetWidth || 118);
-      const photoTop = Math.ceil(scrapbookPhotoEl.offsetTop || 0);
-      const photoBottom = photoTop + Math.ceil(scrapbookPhotoEl.offsetHeight || 138);
-      const gap = 16;
-      const maxLines = 9;
-      const prepared = prepareWithSegments(text, BODY_FONT, { whiteSpace: 'pre-wrap' });
-      const lines = [];
-      let cursor = { segmentIndex: 0, graphemeIndex: 0 };
-      let y = 0;
-
-      scrapbookBodyLinesEl.innerHTML = '';
-
-      for (let index = 0; index < maxLines; index++) {
-        const spec = getBodyLineSpec(y, bodyWidth, photoTop, photoBottom, photoWidth, gap);
-        const line = layoutNextLine(prepared, cursor, spec.width);
-        if (!line) break;
-
-        lines.push({ ...line, ...spec, top: y });
-        cursor = line.end;
-        y += BODY_LINE_HEIGHT;
+      if (overlapping.length === 0) {
+        return { left: horizontalPadding, width: totalWidth - horizontalPadding * 2 };
       }
 
-      const overflowSpec = getBodyLineSpec(y, bodyWidth, photoTop, photoBottom, photoWidth, gap);
-      const hasOverflow = lines.length === maxLines && layoutNextLine(prepared, cursor, overflowSpec.width) !== null;
+      const intervals = overlapping
+        .map((obstacle) => ({
+          start: Math.max(horizontalPadding, obstacle.left - 10),
+          end: Math.min(totalWidth - horizontalPadding, obstacle.right + 10)
+        }))
+        .sort((a, b) => a.start - b.start);
 
-      lines.forEach((line, index) => {
-        const div = document.createElement('div');
-        div.className = 'body-line';
-        let lineText = line.text;
+      const gaps = [];
+      let cursor = horizontalPadding;
 
-        if (hasOverflow && index === lines.length - 1) {
-          lineText = `${lineText.replace(/[.,;:!?-]*$/, '').trimEnd()}...`;
+      for (const interval of intervals) {
+        if (interval.start > cursor) {
+          gaps.push({ left: cursor, width: interval.start - cursor });
         }
+        cursor = Math.max(cursor, interval.end);
+      }
 
-        div.textContent = lineText;
-        div.style.top = `${line.top}px`;
-        div.style.left = `${line.left}px`;
-        div.style.width = `${line.width}px`;
-        scrapbookBodyLinesEl.appendChild(div);
-      });
+      if (cursor < totalWidth - horizontalPadding) {
+        gaps.push({ left: cursor, width: totalWidth - horizontalPadding - cursor });
+      }
 
-      scrapbookBodyLinesEl.style.height = `${Math.max(y, photoBottom + 6, 220)}px`;
+      if (gaps.length === 0) {
+        return { left: horizontalPadding, width: Math.max(120, totalWidth - horizontalPadding * 2) };
+      }
+
+      return gaps.reduce((largest, gap) => gap.width > largest.width ? gap : largest);
     }
 
-    function getBodyLineSpec(y, bodyWidth, photoTop, photoBottom, photoWidth, gap) {
-      const besidePhoto = y >= photoTop && y < photoBottom + 4;
-      const width = besidePhoto
-        ? Math.max(120, bodyWidth - photoWidth - gap)
-        : bodyWidth;
+    function renderShapes() {
+      floatingShapesEl.innerHTML = '';
 
-      return {
-        left: 0,
-        width
+      shapes.forEach((shape) => {
+        const element = document.createElement('div');
+        element.className = `shape-card ${shape.type}`;
+        if (dragState?.id === shape.id) {
+          element.classList.add('is-dragging');
+        }
+        element.dataset.shapeId = shape.id;
+        element.style.left = `${shape.x}px`;
+        element.style.top = `${shape.y}px`;
+        element.style.width = `${shape.width}px`;
+        element.style.minHeight = `${shape.height}px`;
+
+        const title = document.createElement('div');
+        title.className = 'shape-card-title';
+        title.textContent = shape.type;
+
+        const text = document.createElement('div');
+        text.className = 'shape-card-text';
+        text.textContent = shape.text;
+
+        element.appendChild(title);
+        element.appendChild(text);
+        element.addEventListener('pointerdown', startShapeDrag);
+        floatingShapesEl.appendChild(element);
+      });
+    }
+
+    function createShapeFromText(text) {
+      const cleaned = text.replace(/\s+/g, ' ').trim();
+      if (!cleaned) return;
+
+      const type = SHAPE_TYPES[shapes.length % SHAPE_TYPES.length];
+      const shapeText = cleaned.split(' ').slice(0, 16).join(' ');
+      const { width, height } = getShapeSize(type);
+      const pageWidth = Math.max(320, scrapbookPageEl.clientWidth - 48);
+      const x = 60 + (shapes.length % 3) * 150;
+      const y = 110 + Math.floor(shapes.length / 3) * 150;
+
+      shapes.push({
+        id: crypto.randomUUID(),
+        type,
+        text: shapeText,
+        width,
+        height,
+        x: Math.min(x, pageWidth - width - 20),
+        y
+      });
+
+      renderScrapbook();
+    }
+
+    function getShapeSize(type) {
+      if (type === 'circle') return { width: 144, height: 144 };
+      if (type === 'heart') return { width: 160, height: 144 };
+      return { width: 152, height: 132 };
+    }
+
+    function startShapeDrag(event) {
+      const shapeId = event.currentTarget.dataset.shapeId;
+      const shape = shapes.find((item) => item.id === shapeId);
+      if (!shape) return;
+
+      const pageRect = scrapbookPageEl.getBoundingClientRect();
+      dragState = {
+        id: shape.id,
+        offsetX: event.clientX - pageRect.left - shape.x,
+        offsetY: event.clientY - pageRect.top - shape.y
       };
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.addEventListener('pointermove', handleShapeDrag);
+      event.currentTarget.addEventListener('pointerup', endShapeDrag);
+      event.currentTarget.addEventListener('pointercancel', endShapeDrag);
+      renderShapes();
+    }
+
+    function handleShapeDrag(event) {
+      if (!dragState) return;
+      const pageRect = scrapbookPageEl.getBoundingClientRect();
+      const shape = shapes.find((item) => item.id === dragState.id);
+      if (!shape) return;
+
+      shape.x = clamp(event.clientX - pageRect.left - dragState.offsetX, 0, pageRect.width - shape.width - 6);
+      shape.y = clamp(event.clientY - pageRect.top - dragState.offsetY, 56, pageRect.height - shape.height - 12);
+      renderScrapbook();
+    }
+
+    function endShapeDrag(event) {
+      event.currentTarget.removeEventListener('pointermove', handleShapeDrag);
+      event.currentTarget.removeEventListener('pointerup', endShapeDrag);
+      event.currentTarget.removeEventListener('pointercancel', endShapeDrag);
+      dragState = null;
+      renderScrapbook();
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
     }
 
     // --- Recognize via Google Input Tools ---
@@ -1176,6 +1185,7 @@
         if (result.text) {
           renderTextResult(result.text);
           statusEl.textContent = 'Handwriting recognized from image';
+          createShapeFromText(result.text);
           setOutputView('scrapbook');
         } else {
           renderTextResult('Could not recognize text from this image.');
@@ -1186,7 +1196,7 @@
       }
     }
 
-    renderScrapbookPlaceholder();
+    renderScrapbook();
   </script>
 </body>
 </html>
