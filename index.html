@@ -1040,6 +1040,80 @@
       return gaps;
     }
 
+    // Font for shape text - matches .shape-card-text CSS (0.9rem = 14.4px)
+    const SHAPE_TEXT_FONT = '14.4px "IBM Plex Sans", sans-serif';
+    const SHAPE_LINE_HEIGHT = 19.44; // 14.4px * 1.35 line-height
+
+    // Get available text width at a given Y position within a shape
+    // Y is relative to the top of the text area (after title)
+    function getTextWidthAtY(type, shapeWidth, shapeHeight, y, paddingLeft, paddingRight, paddingTop) {
+      if (type === 'sticky') {
+        // Rectangle - full width available
+        return shapeWidth - paddingLeft - paddingRight;
+      }
+      
+      if (type === 'circle') {
+        // Circle: use equation (x - cx)² + (y - cy)² = r²
+        // The text area starts after paddingTop, so adjust y to be relative to shape
+        const absoluteY = y + paddingTop;
+        const cx = shapeWidth / 2;
+        const cy = shapeHeight / 2;
+        const r = Math.min(shapeWidth, shapeHeight) / 2;
+        
+        const dy = absoluteY - cy;
+        if (Math.abs(dy) >= r) return 0; // Outside circle
+        
+        const dx = Math.sqrt(r * r - dy * dy);
+        const leftEdge = cx - dx;
+        const rightEdge = cx + dx;
+        
+        // Account for padding - text can't go beyond padding bounds
+        const effectiveLeft = Math.max(leftEdge, paddingLeft);
+        const effectiveRight = Math.min(rightEdge, shapeWidth - paddingRight);
+        
+        return Math.max(0, effectiveRight - effectiveLeft);
+      }
+      
+      if (type === 'heart') {
+        // Heart clip-path: M80 142 C65 126 20 95 20 56 C20 32 37 18 56 18 C69 18 78 26 80 35 C82 26 91 18 104 18 C123 18 140 32 140 56 C140 95 95 126 80 142 Z
+        // Heart is 160px wide, path goes from x=20 to x=140
+        // Approximate the heart shape at different Y levels
+        const absoluteY = y + paddingTop;
+        
+        // Heart path bounds: top at y≈18, bottom at y=142, widest around y≈56-80
+        if (absoluteY < 18 || absoluteY > 142) return 0;
+        
+        let leftEdge, rightEdge;
+        
+        if (absoluteY <= 56) {
+          // Top lobes region (y: 18-56) - two bumps
+          // Width increases from narrow at top to widest around y=56
+          const t = (absoluteY - 18) / (56 - 18); // 0 at y=18, 1 at y=56
+          // At y=18: roughly x=56 to x=104 (width ~48)
+          // At y=56: roughly x=20 to x=140 (width ~120)
+          const halfWidth = 24 + t * 36; // 24 to 60
+          leftEdge = 80 - halfWidth;
+          rightEdge = 80 + halfWidth;
+        } else {
+          // Bottom triangle region (y: 56-142) - narrows to point
+          const t = (absoluteY - 56) / (142 - 56); // 0 at y=56, 1 at y=142
+          // At y=56: x=20 to x=140 (width ~120)
+          // At y=142: x=80 (width 0, it's the point)
+          const halfWidth = 60 * (1 - t);
+          leftEdge = 80 - halfWidth;
+          rightEdge = 80 + halfWidth;
+        }
+        
+        // Account for padding
+        const effectiveLeft = Math.max(leftEdge, paddingLeft);
+        const effectiveRight = Math.min(rightEdge, shapeWidth - paddingRight);
+        
+        return Math.max(0, effectiveRight - effectiveLeft);
+      }
+      
+      return shapeWidth - paddingLeft - paddingRight;
+    }
+
     function renderShapes() {
       floatingShapesEl.innerHTML = '';
 
@@ -1061,7 +1135,64 @@
 
         const text = document.createElement('div');
         text.className = 'shape-card-text';
-        text.textContent = shape.text;
+
+        // Use Pretext to lay out text that fits within the shape
+        if (shape.type === 'sticky') {
+          // Sticky is rectangular, just use regular text flow
+          text.textContent = shape.text;
+        } else {
+          // For circle and heart, use Pretext to calculate line-by-line layout
+          const prepared = prepareWithSegments(shape.text, SHAPE_TEXT_FONT, { whiteSpace: 'normal' });
+          
+          // Padding values from CSS
+          const paddingLeft = shape.type === 'circle' ? 16 : 20;
+          const paddingRight = shape.type === 'circle' ? 16 : 20;
+          const paddingTop = shape.type === 'circle' ? 14.4 : 32;
+          const paddingBottom = shape.type === 'circle' ? 14.4 : 16;
+          
+          // Title height is approximately 12px + margin
+          const titleHeight = 20;
+          
+          // Calculate available height for text
+          const textAreaTop = paddingTop + titleHeight;
+          const textAreaHeight = shape.height - textAreaTop - paddingBottom;
+          
+          let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+          let y = 0; // Y position relative to text container
+          let guard = 0;
+          
+          while (guard < 15 && y < textAreaHeight) {
+            guard++;
+            
+            // Get available width at this Y position
+            const availableWidth = getTextWidthAtY(
+              shape.type, 
+              shape.width, 
+              shape.height, 
+              y + SHAPE_LINE_HEIGHT / 2, // Use middle of line for width calculation
+              paddingLeft, 
+              paddingRight,
+              textAreaTop
+            );
+            
+            if (availableWidth < 30) {
+              y += SHAPE_LINE_HEIGHT;
+              continue;
+            }
+            
+            const line = layoutNextLine(prepared, cursor, availableWidth);
+            if (!line) break;
+            
+            const lineEl = document.createElement('div');
+            lineEl.style.textAlign = 'center';
+            lineEl.style.width = '100%';
+            lineEl.textContent = line.text;
+            text.appendChild(lineEl);
+            
+            cursor = line.end;
+            y += SHAPE_LINE_HEIGHT;
+          }
+        }
 
         element.appendChild(title);
         element.appendChild(text);
@@ -1108,32 +1239,35 @@
       const pageRect = scrapbookPageEl.getBoundingClientRect();
       dragState = {
         id: shape.id,
+        pointerId: event.pointerId,
         offsetX: event.clientX - pageRect.left - shape.x,
         offsetY: event.clientY - pageRect.top - shape.y
       };
 
-      event.currentTarget.setPointerCapture(event.pointerId);
-      event.currentTarget.addEventListener('pointermove', handleShapeDrag);
-      event.currentTarget.addEventListener('pointerup', endShapeDrag);
-      event.currentTarget.addEventListener('pointercancel', endShapeDrag);
+      event.preventDefault();
+      document.addEventListener('pointermove', handleShapeDrag);
+      document.addEventListener('pointerup', endShapeDrag);
+      document.addEventListener('pointercancel', endShapeDrag);
       renderShapes();
     }
 
     function handleShapeDrag(event) {
-      if (!dragState) return;
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
       const pageRect = scrapbookPageEl.getBoundingClientRect();
       const shape = shapes.find((item) => item.id === dragState.id);
       if (!shape) return;
 
+      event.preventDefault();
       shape.x = clamp(event.clientX - pageRect.left - dragState.offsetX, 0, pageRect.width - shape.width - 6);
       shape.y = clamp(event.clientY - pageRect.top - dragState.offsetY, 56, pageRect.height - shape.height - 12);
       renderScrapbook();
     }
 
     function endShapeDrag(event) {
-      event.currentTarget.removeEventListener('pointermove', handleShapeDrag);
-      event.currentTarget.removeEventListener('pointerup', endShapeDrag);
-      event.currentTarget.removeEventListener('pointercancel', endShapeDrag);
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      document.removeEventListener('pointermove', handleShapeDrag);
+      document.removeEventListener('pointerup', endShapeDrag);
+      document.removeEventListener('pointercancel', endShapeDrag);
       dragState = null;
       renderScrapbook();
     }
