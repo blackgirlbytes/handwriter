@@ -3,46 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Handwriting to Text</title>
+  <title>Handwriter Scrapbook Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Special+Elite&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-ink: #13262f;
+      --bg-olive: #233d4d;
+      --paper: #f5ecd9;
+      --paper-deep: #e8d8b5;
+      --accent-coral: #da6a53;
+      --accent-gold: #e0b35a;
+      --accent-leaf: #6f8f72;
+      --panel: rgba(19, 38, 47, 0.78);
+      --panel-edge: rgba(255, 244, 224, 0.16);
+      --text: #f7f2e8;
+      --muted: rgba(247, 242, 232, 0.7);
+      --shadow: 0 24px 80px rgba(9, 20, 26, 0.32);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f0f0f;
-      color: #e0e0e0;
+      font-family: 'IBM Plex Sans', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(224, 179, 90, 0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(218, 106, 83, 0.14), transparent 28%),
+        linear-gradient(160deg, #102129 0%, #1a3340 50%, #14292f 100%);
+      color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      padding: 2rem 1.25rem 2.5rem;
+    }
+
+    .app-shell {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(320px, 460px) minmax(360px, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .workspace-panel {
+      background: var(--panel);
+      border: 1px solid var(--panel-edge);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .input-workspace {
+      padding: 1.5rem;
+    }
+
+    .panel-kicker {
+      display: inline-flex;
       align-items: center;
-      padding: 2rem;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(224, 179, 90, 0.14);
+      color: #ffe5a5;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.9rem;
     }
 
     h1 {
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
+      font-family: 'Special Elite', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
+      margin-bottom: 0.75rem;
+      max-width: 12ch;
     }
 
     .subtitle {
-      color: #888;
-      margin-bottom: 2rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      max-width: 44ch;
+      line-height: 1.6;
     }
 
     .mode-switcher {
       display: flex;
       gap: 0.5rem;
       margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
 
     .mode-btn.active {
-      background: #4a9eff;
-      border-color: #4a9eff;
-      color: #fff;
+      background: var(--accent-coral);
+      border-color: var(--accent-coral);
+      color: #fff8ef;
     }
 
     .input-panel {
       display: none;
-      width: 500px;
+      width: 100%;
       margin-bottom: 1rem;
     }
 
@@ -52,70 +111,68 @@
 
     .canvas-container {
       position: relative;
-      background: #fff;
-      border-radius: 12px;
+      background:
+        linear-gradient(to bottom, rgba(58, 84, 116, 0.08) 0, rgba(58, 84, 116, 0.08) 1px, transparent 1px, transparent 34px),
+        linear-gradient(to right, transparent 0, transparent 34px, rgba(220, 85, 84, 0.25) 34px, rgba(220, 85, 84, 0.25) 35px, transparent 35px),
+        #fffdf7;
+      background-size: 100% 35px, 100% 100%;
+      border-radius: 24px;
       overflow: hidden;
       margin-bottom: 1rem;
+      border: 1px solid rgba(255, 250, 240, 0.08);
     }
 
     canvas {
       display: block;
       cursor: crosshair;
       touch-action: none;
+      width: 100%;
+      height: auto;
     }
 
     .buttons {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0;
+      flex-wrap: wrap;
     }
 
     button {
-      padding: 0.6rem 1.5rem;
-      border: 1px solid #333;
-      border-radius: 8px;
-      background: #1a1a1a;
-      color: #e0e0e0;
+      padding: 0.7rem 1.15rem;
+      border: 1px solid rgba(255, 244, 224, 0.14);
+      border-radius: 999px;
+      background: rgba(13, 24, 31, 0.44);
+      color: var(--text);
       cursor: pointer;
       font-size: 0.9rem;
-      transition: all 0.2s;
+      font-weight: 500;
+      transition: all 0.2s ease;
     }
 
-    button:hover { background: #2a2a2a; border-color: #555; }
+    button:hover {
+      background: rgba(255, 244, 224, 0.12);
+      border-color: rgba(255, 244, 224, 0.3);
+      transform: translateY(-1px);
+    }
 
     button.primary {
-      background: #4a9eff;
-      border-color: #4a9eff;
-      color: #fff;
+      background: var(--accent-coral);
+      border-color: var(--accent-coral);
+      color: #fff8ef;
     }
 
-    button.primary:hover { background: #3a8eef; }
-    button.primary:disabled { background: #333; border-color: #333; color: #666; cursor: not-allowed; }
-
-    .result {
-      width: 500px;
-      min-height: 80px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 1.2rem;
-      font-size: 1.1rem;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-
-    .result.placeholder { color: #555; }
-
-    .status {
-      color: #888;
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
-      height: 1.2rem;
+    button.primary:hover { background: #cb5a46; }
+    button.primary:disabled {
+      background: rgba(255, 244, 224, 0.08);
+      border-color: rgba(255, 244, 224, 0.08);
+      color: rgba(255, 244, 224, 0.36);
+      cursor: not-allowed;
+      transform: none;
     }
 
     .hint {
-      color: #555;
-      font-size: 0.8rem;
+      color: rgba(247, 242, 232, 0.48);
+      font-size: 0.82rem;
       margin-bottom: 1rem;
     }
 
@@ -125,10 +182,10 @@
       justify-content: center;
       min-height: 180px;
       padding: 1.5rem;
-      background: #1a1a1a;
-      border: 1px dashed #444;
-      border-radius: 12px;
-      color: #9a9a9a;
+      background: rgba(8, 16, 21, 0.34);
+      border: 1px dashed rgba(255, 244, 224, 0.18);
+      border-radius: 24px;
+      color: rgba(247, 242, 232, 0.72);
       text-align: center;
       cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
@@ -145,12 +202,12 @@
     .upload-placeholder i {
       width: 40px;
       height: 40px;
-      color: #7f7f7f;
+      color: rgba(247, 242, 232, 0.58);
     }
 
     .upload-dropzone:hover {
-      background: #202020;
-      border-color: #666;
+      background: rgba(255, 244, 224, 0.06);
+      border-color: rgba(255, 244, 224, 0.34);
     }
 
     .upload-dropzone.has-image {
@@ -164,63 +221,468 @@
       width: 100%;
       max-height: 340px;
       object-fit: contain;
-      background: #111;
+      background: rgba(8, 16, 21, 0.35);
     }
 
     .upload-actions {
       display: flex;
       gap: 0.5rem;
       margin-top: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .upload-input {
       display: none;
     }
+
+    .output-workspace {
+      padding: 1.5rem;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .output-topline h2 {
+      font-family: 'Special Elite', serif;
+      font-size: 1.45rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .output-topline p {
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 34ch;
+    }
+
+    .output-tabs {
+      display: inline-flex;
+      gap: 0.4rem;
+      padding: 0.35rem;
+      border-radius: 999px;
+      background: rgba(255, 244, 224, 0.08);
+    }
+
+    .output-tab.active {
+      background: rgba(255, 248, 239, 0.92);
+      color: #16303a;
+      border-color: rgba(255, 248, 239, 0.92);
+    }
+
+    .status {
+      color: rgba(247, 242, 232, 0.72);
+      font-size: 0.9rem;
+      margin-bottom: 0.9rem;
+      min-height: 1.4rem;
+    }
+
+    .output-panel {
+      display: none;
+      flex: 1;
+    }
+
+    .output-panel.active {
+      display: block;
+    }
+
+    .transcript-panel {
+      min-height: 100%;
+    }
+
+    .result {
+      min-height: 220px;
+      background: rgba(8, 16, 21, 0.35);
+      border: 1px solid rgba(255, 244, 224, 0.12);
+      border-radius: 24px;
+      padding: 1.2rem;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .result.placeholder {
+      color: rgba(247, 242, 232, 0.38);
+    }
+
+    .scrapbook-stage {
+      position: relative;
+      min-height: 720px;
+      border-radius: 28px;
+      padding: 1.25rem;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(247, 242, 232, 0.08), rgba(247, 242, 232, 0.02)),
+        linear-gradient(180deg, rgba(5, 12, 15, 0.2), rgba(5, 12, 15, 0.5));
+      border: 1px solid rgba(255, 244, 224, 0.1);
+    }
+
+    .scrapbook-stage::before,
+    .scrapbook-stage::after {
+      content: '';
+      position: absolute;
+      inset: auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 999px;
+      filter: blur(10px);
+      opacity: 0.35;
+    }
+
+    .scrapbook-stage::before {
+      top: -40px;
+      right: -30px;
+      background: rgba(224, 179, 90, 0.12);
+    }
+
+    .scrapbook-stage::after {
+      bottom: -55px;
+      left: -45px;
+      background: rgba(111, 143, 114, 0.12);
+    }
+
+    .scrapbook-card {
+      position: relative;
+      width: min(100%, 640px);
+      min-height: 640px;
+      margin: 0 auto;
+      border-radius: 34px;
+      padding: 2rem 1.5rem 1.75rem;
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.28), transparent 32%),
+        linear-gradient(180deg, #325764 0%, #284651 100%);
+      box-shadow:
+        0 24px 60px rgba(5, 12, 15, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .scrapbook-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    .scrapbook-meta {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      z-index: 1;
+    }
+
+    .scrapbook-badge,
+    .scrapbook-date {
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(255, 248, 239, 0.15);
+      border: 1px solid rgba(255, 248, 239, 0.18);
+      color: #fff5de;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .scrapbook-cluster {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 1.1rem;
+      justify-items: start;
+    }
+
+    .paper-strip,
+    .paper-note,
+    .paper-tag {
+      position: relative;
+      box-shadow: 0 18px 28px rgba(8, 16, 21, 0.18);
+      border: 1px solid rgba(115, 84, 44, 0.12);
+      color: #2b2b25;
+    }
+
+    .paper-strip::before,
+    .paper-note::before,
+    .paper-tag::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 28%);
+      pointer-events: none;
+    }
+
+    .paper-strip {
+      width: min(78%, 360px);
+      min-height: 100px;
+      padding: 1rem 1.1rem;
+      background: #f2d89f;
+      border-radius: 18px 24px 18px 20px;
+      transform: rotate(-3deg);
+    }
+
+    .paper-note {
+      width: min(88%, 440px);
+      background:
+        linear-gradient(to bottom, rgba(52, 82, 112, 0.1) 0, rgba(52, 82, 112, 0.1) 1px, transparent 1px, transparent 34px),
+        var(--paper);
+      background-size: 100% 35px;
+      border-radius: 22px;
+      padding: 1.35rem 1.35rem 1.1rem;
+      transform: rotate(1.5deg);
+    }
+
+    .paper-tag {
+      width: min(60%, 260px);
+      min-height: 90px;
+      padding: 0.9rem 1rem;
+      background: #d6e0ca;
+      border-radius: 14px 18px 14px 18px;
+      transform: rotate(-4deg);
+      margin-left: auto;
+      margin-right: 1rem;
+    }
+
+    .tape {
+      position: absolute;
+      width: 92px;
+      height: 28px;
+      background: rgba(247, 242, 232, 0.32);
+      border: 1px solid rgba(255, 244, 224, 0.28);
+      box-shadow: 0 8px 18px rgba(8, 16, 21, 0.16);
+      backdrop-filter: blur(2px);
+      z-index: 2;
+    }
+
+    .tape-a {
+      top: 82px;
+      left: 36px;
+      transform: rotate(-8deg);
+    }
+
+    .tape-b {
+      top: 220px;
+      right: 56px;
+      transform: rotate(12deg);
+    }
+
+    .pushpin {
+      position: absolute;
+      top: 24px;
+      right: 34px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: var(--accent-coral);
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.32),
+        0 10px 16px rgba(8, 16, 21, 0.28);
+      z-index: 2;
+    }
+
+    .paper-title {
+      position: relative;
+      font-family: 'Special Elite', serif;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      min-height: 3rem;
+      white-space: pre-wrap;
+    }
+
+    .paper-body {
+      position: relative;
+      min-height: 220px;
+      white-space: pre-wrap;
+    }
+
+    .body-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      font-family: 'Caveat', cursive;
+      font-size: 1.85rem;
+      line-height: 1;
+      color: #282721;
+      transform-origin: left center;
+    }
+
+    .body-line:nth-child(odd) {
+      transform: rotate(-0.4deg);
+    }
+
+    .body-line:nth-child(even) {
+      transform: rotate(0.35deg);
+    }
+
+    .paper-caption {
+      position: relative;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: #233d2f;
+      white-space: pre-wrap;
+    }
+
+    .paper-title-line,
+    .paper-caption-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+    }
+
+    .scrapbook-placeholder {
+      color: rgba(40, 39, 33, 0.55);
+    }
+
+    @media (max-width: 960px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .scrapbook-stage {
+        min-height: 620px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem 0.85rem 1.5rem;
+      }
+
+      .input-workspace,
+      .output-workspace {
+        padding: 1.1rem;
+      }
+
+      .output-topline {
+        flex-direction: column;
+      }
+
+      .scrapbook-card {
+        padding: 1.35rem 1rem 1.2rem;
+        min-height: 580px;
+      }
+
+      .paper-strip,
+      .paper-note,
+      .paper-tag {
+        width: 100%;
+        margin-right: 0;
+      }
+
+      .paper-tag {
+        margin-left: 0;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Handwriting to Text</h1>
-  <p class="subtitle">Draw handwriting or upload an image to extract typed text</p>
+  <div class="app-shell">
+    <section class="workspace-panel input-workspace">
+      <div class="panel-kicker">Pretext exploration branch</div>
+      <h1>Turn handwriting into a scrapbook artifact</h1>
+      <p class="subtitle">Capture handwriting by drawing or photo, then see both the raw OCR transcript and a composed scrapbook card built from the same text.</p>
 
-  <div class="mode-switcher">
-    <button class="mode-btn active" id="drawModeBtn">Draw</button>
-    <button class="mode-btn" id="uploadModeBtn">Upload Image</button>
-  </div>
-
-  <div class="input-panel active" id="drawPanel">
-    <div class="canvas-container">
-      <canvas id="canvas" width="500" height="300"></canvas>
-    </div>
-    <p class="hint">Recognition happens automatically when you stop writing</p>
-  </div>
-
-  <div class="input-panel" id="uploadPanel">
-    <label class="upload-dropzone" id="uploadDropzone" for="imageInput">
-      <div class="upload-placeholder" id="uploadPlaceholder">
-        <i data-lucide="image-up"></i>
-        <span>Choose a handwritten image or drag it here</span>
+      <div class="mode-switcher">
+        <button class="mode-btn active" id="drawModeBtn">Draw</button>
+        <button class="mode-btn" id="uploadModeBtn">Upload Image</button>
       </div>
-      <img id="imagePreview" alt="Uploaded handwriting preview" hidden>
-    </label>
-    <input class="upload-input" id="imageInput" type="file" accept="image/*">
-    <div class="upload-actions">
-      <button id="chooseImageBtn" class="primary">Choose Image</button>
-      <button id="clearImageBtn">Clear Image</button>
-    </div>
-    <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
+
+      <div class="input-panel active" id="drawPanel">
+        <div class="canvas-container">
+          <canvas id="canvas" width="500" height="300"></canvas>
+        </div>
+        <p class="hint">Recognition happens automatically when you stop writing</p>
+      </div>
+
+      <div class="input-panel" id="uploadPanel">
+        <label class="upload-dropzone" id="uploadDropzone" for="imageInput">
+          <div class="upload-placeholder" id="uploadPlaceholder">
+            <i data-lucide="image-up"></i>
+            <span>Choose a handwritten image or drag it here</span>
+          </div>
+          <img id="imagePreview" alt="Uploaded handwriting preview" hidden>
+        </label>
+        <input class="upload-input" id="imageInput" type="file" accept="image/*">
+        <div class="upload-actions">
+          <button id="chooseImageBtn" class="primary">Choose Image</button>
+          <button id="clearImageBtn">Clear Image</button>
+        </div>
+        <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
+      </div>
+
+      <div class="buttons" id="drawButtons">
+        <button id="clearBtn">Clear</button>
+        <button id="undoBtn">Undo</button>
+      </div>
+    </section>
+
+    <section class="workspace-panel output-workspace">
+      <div class="output-topline">
+        <div>
+          <h2>Output studio</h2>
+          <p>Use the transcript for raw OCR output, or switch to the scrapbook tab for a styled composition driven by measured text layout.</p>
+        </div>
+        <div class="output-tabs" role="tablist" aria-label="Output views">
+          <button class="output-tab active" id="transcriptTab" aria-selected="true">Transcript</button>
+          <button class="output-tab" id="scrapbookTab" aria-selected="false">Scrapbook</button>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="output-panel transcript-panel active" id="transcriptPanel">
+        <div class="result placeholder" id="result">Recognized text will appear here...</div>
+      </div>
+
+      <div class="output-panel" id="scrapbookPanel">
+        <div class="scrapbook-stage">
+          <article class="scrapbook-card" id="scrapbookCard">
+            <div class="pushpin"></div>
+            <div class="tape tape-a"></div>
+            <div class="tape tape-b"></div>
+
+            <div class="scrapbook-meta">
+              <div class="scrapbook-badge" id="scrapbookBadge">Waiting for handwriting</div>
+              <div class="scrapbook-date" id="scrapbookDate">Ready to compose</div>
+            </div>
+
+            <div class="scrapbook-cluster">
+              <section class="paper-strip">
+                <div class="paper-title scrapbook-placeholder" id="scrapbookTitle">Upload a note or draw a phrase, then open this tab to see the first scrapbook composition.</div>
+              </section>
+
+              <section class="paper-note">
+                <div class="paper-body scrapbook-placeholder" id="scrapbookBody">Your recognized handwriting will be re-laid into this main note block using measured multiline layout.</div>
+              </section>
+
+              <section class="paper-tag">
+                <div class="paper-caption scrapbook-placeholder" id="scrapbookCaption">This tag becomes a quick summary strip built from the same OCR text.</div>
+              </section>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
   </div>
-
-  <div class="buttons" id="drawButtons">
-    <button id="clearBtn">Clear</button>
-    <button id="undoBtn">Undo</button>
-  </div>
-
-  <div class="status" id="status"></div>
-
-  <div class="result placeholder" id="result">Recognized text will appear here...</div>
 
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script>
+  <script type="module">
+    import { prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/pretext@0.0.3';
+
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const clearBtn = document.getElementById('clearBtn');
@@ -238,6 +700,15 @@
     const imagePreview = document.getElementById('imagePreview');
     const statusEl = document.getElementById('status');
     const resultEl = document.getElementById('result');
+    const transcriptTab = document.getElementById('transcriptTab');
+    const scrapbookTab = document.getElementById('scrapbookTab');
+    const transcriptPanel = document.getElementById('transcriptPanel');
+    const scrapbookPanel = document.getElementById('scrapbookPanel');
+    const scrapbookTitleEl = document.getElementById('scrapbookTitle');
+    const scrapbookBodyEl = document.getElementById('scrapbookBody');
+    const scrapbookCaptionEl = document.getElementById('scrapbookCaption');
+    const scrapbookBadgeEl = document.getElementById('scrapbookBadge');
+    const scrapbookDateEl = document.getElementById('scrapbookDate');
 
     // Stroke data: array of strokes, each stroke is [xArray, yArray, timeArray]
     let trace = [];
@@ -246,6 +717,14 @@
     let recognizeTimer = null;
     let currentMode = 'draw';
     let uploadedImageDataUrl = null;
+    let latestRecognizedText = '';
+
+    const BODY_FONT = '28px Caveat';
+    const BODY_LINE_HEIGHT = 35;
+    const TITLE_FONT = '20px "Special Elite"';
+    const TITLE_LINE_HEIGHT = 28;
+    const CAPTION_FONT = '15px "IBM Plex Sans"';
+    const CAPTION_LINE_HEIGHT = 23;
 
     lucide.createIcons();
 
@@ -309,6 +788,13 @@
 
     drawModeBtn.addEventListener('click', () => setMode('draw'));
     uploadModeBtn.addEventListener('click', () => setMode('upload'));
+    transcriptTab.addEventListener('click', () => setOutputView('transcript'));
+    scrapbookTab.addEventListener('click', () => setOutputView('scrapbook'));
+    window.addEventListener('resize', () => {
+      if (latestRecognizedText) {
+        updateScrapbook(latestRecognizedText);
+      }
+    });
 
     function setMode(mode) {
       currentMode = mode;
@@ -318,6 +804,20 @@
       uploadPanel.classList.toggle('active', mode === 'upload');
       drawButtons.style.display = mode === 'draw' ? 'flex' : 'none';
       statusEl.textContent = '';
+    }
+
+    function setOutputView(view) {
+      const showTranscript = view === 'transcript';
+      transcriptTab.classList.toggle('active', showTranscript);
+      scrapbookTab.classList.toggle('active', !showTranscript);
+      transcriptTab.setAttribute('aria-selected', String(showTranscript));
+      scrapbookTab.setAttribute('aria-selected', String(!showTranscript));
+      transcriptPanel.classList.toggle('active', showTranscript);
+      scrapbookPanel.classList.toggle('active', !showTranscript);
+
+      if (!showTranscript && latestRecognizedText) {
+        updateScrapbook(latestRecognizedText);
+      }
     }
 
     // --- Clear ---
@@ -385,9 +885,11 @@
     }
 
     function resetResult() {
+      latestRecognizedText = '';
       resultEl.textContent = 'Recognized text will appear here...';
       resultEl.classList.add('placeholder');
       statusEl.textContent = '';
+      renderScrapbookPlaceholder();
     }
 
     function clearImage() {
@@ -429,11 +931,110 @@
     }
 
     function renderTextResult(text, alternatives = []) {
+      latestRecognizedText = text;
       resultEl.textContent = text;
       resultEl.classList.remove('placeholder');
       statusEl.textContent = alternatives.length > 0
         ? `Also matched: ${alternatives.slice(0, 3).join(', ')}`
         : '';
+      updateScrapbook(text);
+    }
+
+    async function updateScrapbook(text) {
+      const cleaned = text.trim();
+
+      if (!cleaned) {
+        renderScrapbookPlaceholder();
+        return;
+      }
+
+      const content = buildScrapbookContent(cleaned);
+
+      scrapbookTitleEl.classList.remove('scrapbook-placeholder');
+      scrapbookBodyEl.classList.remove('scrapbook-placeholder');
+      scrapbookCaptionEl.classList.remove('scrapbook-placeholder');
+      scrapbookBadgeEl.textContent = currentMode === 'upload' ? 'From uploaded handwriting' : 'From live handwriting';
+      scrapbookDateEl.textContent = new Date().toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      await Promise.all([
+        document.fonts.load(TITLE_FONT),
+        document.fonts.load(BODY_FONT),
+        document.fonts.load(CAPTION_FONT)
+      ]);
+
+      layoutTextIntoElement(scrapbookTitleEl, content.title, TITLE_FONT, TITLE_LINE_HEIGHT, 2, 'paper-title-line');
+      layoutTextIntoElement(scrapbookBodyEl, content.body, BODY_FONT, BODY_LINE_HEIGHT, 8, 'body-line');
+      layoutTextIntoElement(scrapbookCaptionEl, content.caption, CAPTION_FONT, CAPTION_LINE_HEIGHT, 3, 'paper-caption-line');
+    }
+
+    function renderScrapbookPlaceholder() {
+      scrapbookBadgeEl.textContent = 'Waiting for handwriting';
+      scrapbookDateEl.textContent = 'Ready to compose';
+      scrapbookTitleEl.textContent = 'Upload a note or draw a phrase, then open this tab to see the first scrapbook composition.';
+      scrapbookBodyEl.textContent = 'Your recognized handwriting will be re-laid into this main note block using measured multiline layout.';
+      scrapbookCaptionEl.textContent = 'This tag becomes a quick summary strip built from the same OCR text.';
+      scrapbookTitleEl.classList.add('scrapbook-placeholder');
+      scrapbookBodyEl.classList.add('scrapbook-placeholder');
+      scrapbookCaptionEl.classList.add('scrapbook-placeholder');
+      scrapbookBodyEl.style.height = '';
+      scrapbookTitleEl.style.height = '';
+      scrapbookCaptionEl.style.height = '';
+    }
+
+    function buildScrapbookContent(text) {
+      const normalized = text.replace(/\s+/g, ' ').trim();
+      const sentenceParts = normalized.split(/(?<=[.!?])\s+/).filter(Boolean);
+      const words = normalized.split(' ').filter(Boolean);
+      const title = sentenceParts[0] && sentenceParts[0].length <= 56
+        ? sentenceParts[0]
+        : words.slice(0, Math.min(6, words.length)).join(' ');
+      const bodySource = normalized.startsWith(title)
+        ? normalized.slice(title.length).trim()
+        : normalized;
+      const body = bodySource || normalized;
+      const previewWords = body.split(' ').filter(Boolean);
+      const captionSource = previewWords.slice(0, Math.min(14, previewWords.length)).join(' ');
+      const caption = captionSource
+        ? `${captionSource}${previewWords.length > 14 ? '...' : ''}`
+        : 'Captured and recomposed from your handwriting.';
+
+      return {
+        title,
+        body,
+        caption: `Scrapbook note: ${caption}`
+      };
+    }
+
+    function layoutTextIntoElement(element, text, font, lineHeight, maxLines, lineClassName) {
+      const width = Math.max(120, Math.floor(element.clientWidth || element.getBoundingClientRect().width || 280));
+      const prepared = prepareWithSegments(text, font, { whiteSpace: 'pre-wrap' });
+      const { lines } = layoutWithLines(prepared, width, lineHeight);
+      const visibleLines = lines.slice(0, maxLines);
+      const hasOverflow = lines.length > maxLines;
+
+      element.innerHTML = '';
+
+      visibleLines.forEach((line, index) => {
+        const div = document.createElement('div');
+        div.className = lineClassName;
+        let lineText = line.text;
+        if (hasOverflow && index === visibleLines.length - 1) {
+          lineText = `${lineText.replace(/[.,;:!?-]*$/, '').trimEnd()}...`;
+        }
+        div.textContent = lineText;
+        div.style.top = `${index * lineHeight}px`;
+        element.appendChild(div);
+      });
+
+      element.style.height = `${Math.max(visibleLines.length, 1) * lineHeight}px`;
+
+      if (visibleLines.length === 0) {
+        element.textContent = text;
+      }
     }
 
     // --- Recognize via Google Input Tools ---
@@ -496,6 +1097,7 @@
         if (result.text) {
           renderTextResult(result.text);
           statusEl.textContent = 'Handwriting recognized from image';
+          setOutputView('scrapbook');
         } else {
           renderTextResult('Could not recognize text from this image.');
         }
@@ -504,6 +1106,8 @@
         console.error(err);
       }
     }
+
+    renderScrapbookPlaceholder();
   </script>
 </body>
 </html>
