@@ -540,20 +540,46 @@
       position: absolute;
       right: 10px;
       bottom: 10px;
-      width: 18px;
-      height: 18px;
+      width: 22px;
+      height: 22px;
       border-radius: 999px;
-      border: 1px solid rgba(64, 55, 41, 0.18);
+      border: 2px solid rgba(64, 55, 41, 0.38);
       background:
-        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3) 45%, rgba(64, 55, 41, 0.18) 100%);
-      box-shadow: 0 6px 14px rgba(24, 20, 12, 0.18);
+        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.5) 45%, rgba(64, 55, 41, 0.26) 100%);
+      box-shadow: 0 6px 14px rgba(24, 20, 12, 0.28);
       cursor: nwse-resize;
       z-index: 2;
     }
 
+    .shape-resize-handle::before,
+    .shape-resize-handle::after {
+      content: '';
+      position: absolute;
+      background: rgba(64, 55, 41, 0.55);
+      border-radius: 999px;
+    }
+
+    .shape-resize-handle::before {
+      width: 10px;
+      height: 2px;
+      left: 5px;
+      top: 10px;
+      transform: rotate(45deg);
+    }
+
+    .shape-resize-handle::after {
+      width: 10px;
+      height: 2px;
+      left: 8px;
+      top: 7px;
+      transform: rotate(45deg);
+    }
+
     .shape-card.heart .shape-resize-handle {
-      right: 22px;
-      bottom: 24px;
+      left: 50%;
+      right: auto;
+      bottom: 30px;
+      transform: translateX(-50%);
     }
 
     .scrapbook-empty-tip {
