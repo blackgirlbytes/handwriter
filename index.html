@@ -3,46 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Handwriting to Text</title>
+  <title>Handwriter Scrapbook Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Special+Elite&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-ink: #13262f;
+      --bg-olive: #233d4d;
+      --paper: #f5ecd9;
+      --paper-deep: #e8d8b5;
+      --accent-coral: #da6a53;
+      --accent-gold: #e0b35a;
+      --accent-leaf: #6f8f72;
+      --panel: rgba(19, 38, 47, 0.78);
+      --panel-edge: rgba(255, 244, 224, 0.16);
+      --text: #f7f2e8;
+      --muted: rgba(247, 242, 232, 0.7);
+      --shadow: 0 24px 80px rgba(9, 20, 26, 0.32);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f0f0f;
-      color: #e0e0e0;
+      font-family: 'IBM Plex Sans', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(224, 179, 90, 0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(218, 106, 83, 0.14), transparent 28%),
+        linear-gradient(160deg, #102129 0%, #1a3340 50%, #14292f 100%);
+      color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      padding: 2rem 1.25rem 2.5rem;
+    }
+
+    .app-shell {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(320px, 460px) minmax(360px, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .workspace-panel {
+      background: var(--panel);
+      border: 1px solid var(--panel-edge);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .input-workspace {
+      padding: 1.5rem;
+    }
+
+    .panel-kicker {
+      display: inline-flex;
       align-items: center;
-      padding: 2rem;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(224, 179, 90, 0.14);
+      color: #ffe5a5;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.9rem;
     }
 
     h1 {
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
+      font-family: 'Special Elite', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
+      margin-bottom: 0.75rem;
+      max-width: 12ch;
     }
 
     .subtitle {
-      color: #888;
-      margin-bottom: 2rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      max-width: 44ch;
+      line-height: 1.6;
     }
 
     .mode-switcher {
       display: flex;
       gap: 0.5rem;
       margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
 
     .mode-btn.active {
-      background: #4a9eff;
-      border-color: #4a9eff;
-      color: #fff;
+      background: var(--accent-coral);
+      border-color: var(--accent-coral);
+      color: #fff8ef;
     }
 
     .input-panel {
       display: none;
-      width: 500px;
+      width: 100%;
       margin-bottom: 1rem;
     }
 
@@ -52,70 +111,68 @@
 
     .canvas-container {
       position: relative;
-      background: #fff;
-      border-radius: 12px;
+      background:
+        linear-gradient(to bottom, rgba(58, 84, 116, 0.08) 0, rgba(58, 84, 116, 0.08) 1px, transparent 1px, transparent 34px),
+        linear-gradient(to right, transparent 0, transparent 34px, rgba(220, 85, 84, 0.25) 34px, rgba(220, 85, 84, 0.25) 35px, transparent 35px),
+        #fffdf7;
+      background-size: 100% 35px, 100% 100%;
+      border-radius: 24px;
       overflow: hidden;
       margin-bottom: 1rem;
+      border: 1px solid rgba(255, 250, 240, 0.08);
     }
 
     canvas {
       display: block;
       cursor: crosshair;
       touch-action: none;
+      width: 100%;
+      height: auto;
     }
 
     .buttons {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0;
+      flex-wrap: wrap;
     }
 
     button {
-      padding: 0.6rem 1.5rem;
-      border: 1px solid #333;
-      border-radius: 8px;
-      background: #1a1a1a;
-      color: #e0e0e0;
+      padding: 0.7rem 1.15rem;
+      border: 1px solid rgba(255, 244, 224, 0.14);
+      border-radius: 999px;
+      background: rgba(13, 24, 31, 0.44);
+      color: var(--text);
       cursor: pointer;
       font-size: 0.9rem;
-      transition: all 0.2s;
+      font-weight: 500;
+      transition: all 0.2s ease;
     }
 
-    button:hover { background: #2a2a2a; border-color: #555; }
+    button:hover {
+      background: rgba(255, 244, 224, 0.12);
+      border-color: rgba(255, 244, 224, 0.3);
+      transform: translateY(-1px);
+    }
 
     button.primary {
-      background: #4a9eff;
-      border-color: #4a9eff;
-      color: #fff;
+      background: var(--accent-coral);
+      border-color: var(--accent-coral);
+      color: #fff8ef;
     }
 
-    button.primary:hover { background: #3a8eef; }
-    button.primary:disabled { background: #333; border-color: #333; color: #666; cursor: not-allowed; }
-
-    .result {
-      width: 500px;
-      min-height: 80px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 1.2rem;
-      font-size: 1.1rem;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-
-    .result.placeholder { color: #555; }
-
-    .status {
-      color: #888;
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
-      height: 1.2rem;
+    button.primary:hover { background: #cb5a46; }
+    button.primary:disabled {
+      background: rgba(255, 244, 224, 0.08);
+      border-color: rgba(255, 244, 224, 0.08);
+      color: rgba(255, 244, 224, 0.36);
+      cursor: not-allowed;
+      transform: none;
     }
 
     .hint {
-      color: #555;
-      font-size: 0.8rem;
+      color: rgba(247, 242, 232, 0.48);
+      font-size: 0.82rem;
       margin-bottom: 1rem;
     }
 
@@ -125,10 +182,10 @@
       justify-content: center;
       min-height: 180px;
       padding: 1.5rem;
-      background: #1a1a1a;
-      border: 1px dashed #444;
-      border-radius: 12px;
-      color: #9a9a9a;
+      background: rgba(8, 16, 21, 0.34);
+      border: 1px dashed rgba(255, 244, 224, 0.18);
+      border-radius: 24px;
+      color: rgba(247, 242, 232, 0.72);
       text-align: center;
       cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
@@ -145,12 +202,12 @@
     .upload-placeholder i {
       width: 40px;
       height: 40px;
-      color: #7f7f7f;
+      color: rgba(247, 242, 232, 0.58);
     }
 
     .upload-dropzone:hover {
-      background: #202020;
-      border-color: #666;
+      background: rgba(255, 244, 224, 0.06);
+      border-color: rgba(255, 244, 224, 0.34);
     }
 
     .upload-dropzone.has-image {
@@ -164,80 +221,566 @@
       width: 100%;
       max-height: 340px;
       object-fit: contain;
-      background: #111;
+      background: rgba(8, 16, 21, 0.35);
+    }
+
+    .camera-preview {
+      display: block;
+      width: 100%;
+      max-height: 340px;
+      object-fit: cover;
+      background: rgba(8, 16, 21, 0.55);
     }
 
     .upload-actions {
       display: flex;
       gap: 0.5rem;
       margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .upload-actions.camera-actions {
+      margin-top: 0.5rem;
     }
 
     .upload-input {
       display: none;
     }
+
+    .output-workspace {
+      padding: 1.5rem;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .output-topline h2 {
+      font-family: 'Special Elite', serif;
+      font-size: 1.45rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .output-topline p {
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 34ch;
+    }
+
+    .output-tabs {
+      display: inline-flex;
+      gap: 0.4rem;
+      padding: 0.35rem;
+      border-radius: 999px;
+      background: rgba(255, 244, 224, 0.08);
+    }
+
+    .output-tab.active {
+      background: rgba(255, 248, 239, 0.92);
+      color: #16303a;
+      border-color: rgba(255, 248, 239, 0.92);
+    }
+
+    .status {
+      color: rgba(247, 242, 232, 0.72);
+      font-size: 0.9rem;
+      margin-bottom: 0.9rem;
+      min-height: 1.4rem;
+    }
+
+    .output-panel {
+      display: none;
+      flex: 1;
+    }
+
+    .output-panel.active {
+      display: block;
+    }
+
+    .transcript-panel {
+      min-height: 100%;
+    }
+
+    .result {
+      min-height: 220px;
+      background: rgba(8, 16, 21, 0.35);
+      border: 1px solid rgba(255, 244, 224, 0.12);
+      border-radius: 24px;
+      padding: 1.2rem;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .result.placeholder {
+      color: rgba(247, 242, 232, 0.38);
+    }
+
+    .scrapbook-stage {
+      position: relative;
+      min-height: 780px;
+      border-radius: 28px;
+      padding: 1.25rem;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(247, 242, 232, 0.08), rgba(247, 242, 232, 0.02)),
+        linear-gradient(180deg, rgba(5, 12, 15, 0.2), rgba(5, 12, 15, 0.5));
+      border: 1px solid rgba(255, 244, 224, 0.1);
+    }
+
+    .scrapbook-stage::before,
+    .scrapbook-stage::after {
+      content: '';
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border-radius: 999px;
+      filter: blur(10px);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .scrapbook-stage::before {
+      top: -40px;
+      right: -30px;
+      background: rgba(224, 179, 90, 0.12);
+    }
+
+    .scrapbook-stage::after {
+      bottom: -55px;
+      left: -45px;
+      background: rgba(111, 143, 114, 0.12);
+    }
+
+    .scrapbook-toolbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .scrapbook-page {
+      position: relative;
+      width: min(100%, 680px);
+      min-height: 680px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      border-radius: 30px;
+      background:
+        linear-gradient(to bottom, rgba(58, 84, 116, 0.06) 0, rgba(58, 84, 116, 0.06) 1px, transparent 1px, transparent 35px),
+        linear-gradient(to right, transparent 0, transparent 42px, rgba(220, 85, 84, 0.16) 42px, rgba(220, 85, 84, 0.16) 43px, transparent 43px),
+        #f6eddb;
+      background-size: 100% 35px, 100% 100%;
+      box-shadow:
+        0 24px 60px rgba(5, 12, 15, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      overflow: hidden;
+    }
+
+    .scrapbook-page::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.35), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(203, 180, 134, 0.18), transparent 24%);
+      pointer-events: none;
+    }
+
+    .scrapbook-meta {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .scrapbook-badge,
+    .scrapbook-date {
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(255, 248, 239, 0.15);
+      border: 1px solid rgba(255, 248, 239, 0.18);
+      color: #fff5de;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .scrapbook-surface {
+      position: relative;
+      min-height: 560px;
+      z-index: 1;
+    }
+
+    .background-story {
+      position: relative;
+      min-height: 560px;
+      color: #403729;
+    }
+
+    .background-line {
+      position: absolute;
+      font-family: 'Caveat', cursive;
+      font-size: 1.65rem;
+      line-height: 1;
+      white-space: nowrap;
+      color: #403729;
+      opacity: 0.95;
+      pointer-events: none;
+    }
+
+    .background-placeholder {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: rgba(64, 55, 41, 0.58);
+      max-width: 34ch;
+      padding-left: 1rem;
+      padding-top: 0.75rem;
+    }
+
+    .floating-shapes {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+    }
+
+    .shape-card {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 16px 28px rgba(24, 20, 12, 0.18);
+      color: #2b2b25;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .shape-card.is-dragging {
+      cursor: grabbing;
+      box-shadow: 0 20px 34px rgba(24, 20, 12, 0.24);
+    }
+
+    .shape-card.is-resizing {
+      cursor: nwse-resize;
+      box-shadow: 0 20px 34px rgba(24, 20, 12, 0.24);
+    }
+
+    .shape-card.sticky,
+    .shape-card.circle,
+    .shape-card.heart {
+      border: 1px solid rgba(115, 84, 44, 0.12);
+    }
+
+    .shape-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 28%);
+      pointer-events: none;
+    }
+
+    .shape-card.sticky {
+      width: 152px;
+      min-height: 132px;
+      background: #f2d89f;
+      border-radius: 18px 24px 18px 20px;
+      transform: rotate(-3deg);
+    }
+
+    .shape-card.circle {
+      width: 144px;
+      min-height: 144px;
+      background: #d8e2d0;
+      border-radius: 999px;
+      transform: rotate(6deg);
+      text-align: center;
+    }
+
+    .shape-card.heart {
+      width: 160px;
+      min-height: 144px;
+      background: #edc6bf;
+      clip-path: polygon(
+        50% 100%,
+        18% 72%,
+        7% 52%,
+        9% 28%,
+        23% 12%,
+        36% 12%,
+        50% 24%,
+        64% 12%,
+        77% 12%,
+        91% 28%,
+        93% 52%,
+        82% 72%
+      );
+      transform: rotate(-5deg);
+      padding: 2rem 1.25rem 1rem;
+      text-align: center;
+    }
+
+    .shape-card.heart::before {
+      clip-path: inherit;
+    }
+
+    .shape-card-title {
+      position: relative;
+      z-index: 1;
+      font-family: 'Special Elite', serif;
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(64, 55, 41, 0.72);
+      margin-bottom: 0.5rem;
+    }
+
+    .shape-card-text {
+      position: relative;
+      z-index: 1;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .shape-resize-handle {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid rgba(64, 55, 41, 0.38);
+      background:
+        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.5) 45%, rgba(64, 55, 41, 0.26) 100%);
+      box-shadow: 0 6px 14px rgba(24, 20, 12, 0.28);
+      cursor: nwse-resize;
+      z-index: 2;
+    }
+
+    .shape-resize-handle::before,
+    .shape-resize-handle::after {
+      content: '';
+      position: absolute;
+      background: rgba(64, 55, 41, 0.55);
+      border-radius: 999px;
+    }
+
+    .shape-resize-handle::before {
+      width: 10px;
+      height: 2px;
+      left: 5px;
+      top: 10px;
+      transform: rotate(45deg);
+    }
+
+    .shape-resize-handle::after {
+      width: 10px;
+      height: 2px;
+      left: 8px;
+      top: 7px;
+      transform: rotate(45deg);
+    }
+
+    .shape-card.heart .shape-resize-handle {
+      left: 50%;
+      right: auto;
+      bottom: 12px;
+      transform: translateX(-50%);
+    }
+
+    .scrapbook-empty-tip {
+      color: rgba(64, 55, 41, 0.6);
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      text-align: center;
+    }
+
+    @media (max-width: 960px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .scrapbook-stage {
+        min-height: 620px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem 0.85rem 1.5rem;
+      }
+
+      .input-workspace,
+      .output-workspace {
+        padding: 1.1rem;
+      }
+
+      .output-topline {
+        flex-direction: column;
+      }
+
+      .scrapbook-page {
+        padding: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Handwriting to Text</h1>
-  <p class="subtitle">Draw handwriting or upload an image to extract typed text</p>
+  <div class="app-shell">
+    <section class="workspace-panel input-workspace">
+      <div class="panel-kicker">Pretext exploration branch</div>
+      <h1>Turn handwriting into a scrapbook artifact</h1>
+      <p class="subtitle">Capture handwriting by drawing or photo, then see both the raw OCR transcript and a composed scrapbook card built from the same text.</p>
 
-  <div class="mode-switcher">
-    <button class="mode-btn active" id="drawModeBtn">Draw</button>
-    <button class="mode-btn" id="uploadModeBtn">Upload Image</button>
-  </div>
-
-  <div class="input-panel active" id="drawPanel">
-    <div class="canvas-container">
-      <canvas id="canvas" width="500" height="300"></canvas>
-    </div>
-    <p class="hint">Recognition happens automatically when you stop writing</p>
-  </div>
-
-  <div class="input-panel" id="uploadPanel">
-    <label class="upload-dropzone" id="uploadDropzone" for="imageInput">
-      <div class="upload-placeholder" id="uploadPlaceholder">
-        <i data-lucide="image-up"></i>
-        <span>Choose a handwritten image or drag it here</span>
+      <div class="mode-switcher">
+        <button class="mode-btn active" id="drawModeBtn">Draw</button>
+        <button class="mode-btn" id="uploadModeBtn">Upload Image</button>
+        <button class="mode-btn" id="cameraModeBtn">Camera</button>
       </div>
-      <img id="imagePreview" alt="Uploaded handwriting preview" hidden>
-    </label>
-    <input class="upload-input" id="imageInput" type="file" accept="image/*">
-    <div class="upload-actions">
-      <button id="chooseImageBtn" class="primary">Choose Image</button>
-      <button id="clearImageBtn">Clear Image</button>
-    </div>
-    <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
+
+      <div class="input-panel active" id="drawPanel">
+        <div class="canvas-container">
+          <canvas id="canvas" width="500" height="300"></canvas>
+        </div>
+        <p class="hint">Recognition happens automatically when you stop writing</p>
+      </div>
+
+      <div class="input-panel" id="uploadPanel">
+        <label class="upload-dropzone" id="uploadDropzone" for="imageInput">
+          <div class="upload-placeholder" id="uploadPlaceholder">
+            <i data-lucide="image-up"></i>
+            <span>Choose a handwritten image or drag it here</span>
+          </div>
+          <img id="imagePreview" alt="Uploaded handwriting preview" hidden>
+        </label>
+        <input class="upload-input" id="imageInput" type="file" accept="image/*">
+        <div class="upload-actions">
+          <button id="chooseImageBtn" class="primary">Choose Image</button>
+          <button id="clearImageBtn">Clear Image</button>
+        </div>
+        <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
+      </div>
+
+      <div class="input-panel" id="cameraPanel">
+        <div class="upload-dropzone has-image">
+          <div class="upload-placeholder" id="cameraPlaceholder">
+            <i data-lucide="camera"></i>
+            <span>Open the camera, hold up your handwriting, then take a photo</span>
+          </div>
+          <video id="cameraPreview" class="camera-preview" autoplay playsinline muted hidden></video>
+        </div>
+        <div class="upload-actions camera-actions">
+          <button id="startCameraBtn" class="primary">Open Camera</button>
+          <button id="capturePhotoBtn">Take Photo</button>
+          <button id="stopCameraBtn">Stop Camera</button>
+        </div>
+        <p class="hint">The app prefers the rear camera so handwriting is not mirrored like a selfie preview.</p>
+      </div>
+
+      <div class="buttons" id="drawButtons">
+        <button id="clearBtn">Clear</button>
+        <button id="undoBtn">Undo</button>
+      </div>
+    </section>
+
+    <section class="workspace-panel output-workspace">
+      <div class="output-topline">
+        <div>
+          <h2>Output studio</h2>
+          <p>Use the transcript for raw OCR output, or switch to the scrapbook tab for a styled composition driven by measured text layout.</p>
+        </div>
+        <div class="output-tabs" role="tablist" aria-label="Output views">
+          <button class="output-tab active" id="transcriptTab" aria-selected="true">Transcript</button>
+          <button class="output-tab" id="scrapbookTab" aria-selected="false">Scrapbook</button>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="output-panel transcript-panel active" id="transcriptPanel">
+        <div class="result placeholder" id="result">Recognized text will appear here...</div>
+      </div>
+
+      <div class="output-panel" id="scrapbookPanel">
+        <div class="scrapbook-stage">
+          <div class="scrapbook-toolbar">
+            <button id="addShapeBtn" class="primary">Make Shape From Transcript</button>
+            <div class="scrapbook-empty-tip">Drag shapes around the page and watch the background writing route around them.</div>
+          </div>
+
+          <article class="scrapbook-page" id="scrapbookPage">
+            <div class="scrapbook-meta">
+              <div class="scrapbook-badge" id="scrapbookBadge">Waiting for handwriting</div>
+              <div class="scrapbook-date" id="scrapbookDate">No floating shapes yet</div>
+            </div>
+
+            <div class="scrapbook-surface">
+              <div class="background-story" id="backgroundStory"></div>
+              <div class="floating-shapes" id="floatingShapes"></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
   </div>
-
-  <div class="buttons" id="drawButtons">
-    <button id="clearBtn">Clear</button>
-    <button id="undoBtn">Undo</button>
-  </div>
-
-  <div class="status" id="status"></div>
-
-  <div class="result placeholder" id="result">Recognized text will appear here...</div>
 
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script>
+  <script type="module">
+    import { prepareWithSegments, layoutNextLine } from 'https://esm.sh/@chenglou/pretext@0.0.3';
+
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const clearBtn = document.getElementById('clearBtn');
     const undoBtn = document.getElementById('undoBtn');
     const drawModeBtn = document.getElementById('drawModeBtn');
     const uploadModeBtn = document.getElementById('uploadModeBtn');
+    const cameraModeBtn = document.getElementById('cameraModeBtn');
     const drawPanel = document.getElementById('drawPanel');
     const uploadPanel = document.getElementById('uploadPanel');
+    const cameraPanel = document.getElementById('cameraPanel');
     const drawButtons = document.getElementById('drawButtons');
     const imageInput = document.getElementById('imageInput');
     const chooseImageBtn = document.getElementById('chooseImageBtn');
     const clearImageBtn = document.getElementById('clearImageBtn');
     const uploadDropzone = document.getElementById('uploadDropzone');
     const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+    const cameraPreview = document.getElementById('cameraPreview');
     const imagePreview = document.getElementById('imagePreview');
+    const startCameraBtn = document.getElementById('startCameraBtn');
+    const capturePhotoBtn = document.getElementById('capturePhotoBtn');
+    const stopCameraBtn = document.getElementById('stopCameraBtn');
     const statusEl = document.getElementById('status');
     const resultEl = document.getElementById('result');
+    const transcriptTab = document.getElementById('transcriptTab');
+    const scrapbookTab = document.getElementById('scrapbookTab');
+    const transcriptPanel = document.getElementById('transcriptPanel');
+    const scrapbookPanel = document.getElementById('scrapbookPanel');
+    const scrapbookBadgeEl = document.getElementById('scrapbookBadge');
+    const scrapbookDateEl = document.getElementById('scrapbookDate');
+    const scrapbookPageEl = document.getElementById('scrapbookPage');
+    const backgroundStoryEl = document.getElementById('backgroundStory');
+    const floatingShapesEl = document.getElementById('floatingShapes');
+    const addShapeBtn = document.getElementById('addShapeBtn');
 
     // Stroke data: array of strokes, each stroke is [xArray, yArray, timeArray]
     let trace = [];
@@ -246,6 +789,23 @@
     let recognizeTimer = null;
     let currentMode = 'draw';
     let uploadedImageDataUrl = null;
+    let cameraStream = null;
+    let latestRecognizedText = '';
+    let shapes = [];
+    let dragState = null;
+    let resizeState = null;
+    let animationFrameId = null;
+    let storyFontReady = false;
+
+    const STORY_FONT = '26px Caveat';
+    const STORY_LINE_HEIGHT = 33;
+    const SHAPE_TYPES = ['sticky', 'circle', 'heart'];
+    const BACKGROUND_TEXT = `The page begins with a quiet stream of writing, the kind that feels like a journal entry already living on the paper before anything new arrives. Then the uploaded handwriting comes in like found fragments, little memories that can be turned into floating keepsakes. Move them around and the rest of the page keeps adjusting, making room as if the paper itself is thinking about composition in real time. This is where pretext starts to feel useful instead of theoretical, because every line can become narrower or wider depending on what is drifting through the page.`;
+    const SHAPE_SPRING = 0.18;
+    const SHAPE_SETTLE_EPSILON = 0.35;
+    const SHAPE_DRIFT_SPEED = 0.00055;
+    const SHAPE_DRIFT_X = 18;
+    const SHAPE_DRIFT_Y = 12;
 
     lucide.createIcons();
 
@@ -309,15 +869,46 @@
 
     drawModeBtn.addEventListener('click', () => setMode('draw'));
     uploadModeBtn.addEventListener('click', () => setMode('upload'));
+    cameraModeBtn.addEventListener('click', () => setMode('camera'));
+    transcriptTab.addEventListener('click', () => setOutputView('transcript'));
+    scrapbookTab.addEventListener('click', () => setOutputView('scrapbook'));
+    addShapeBtn.addEventListener('click', () => {
+      if (!latestRecognizedText.trim()) return;
+      createShapeFromText(latestRecognizedText);
+      setOutputView('scrapbook');
+    });
+    window.addEventListener('resize', () => {
+      renderScrapbook();
+    });
 
     function setMode(mode) {
       currentMode = mode;
+      if (mode !== 'camera') {
+        stopCamera();
+      }
       drawModeBtn.classList.toggle('active', mode === 'draw');
       uploadModeBtn.classList.toggle('active', mode === 'upload');
+      cameraModeBtn.classList.toggle('active', mode === 'camera');
       drawPanel.classList.toggle('active', mode === 'draw');
       uploadPanel.classList.toggle('active', mode === 'upload');
+      cameraPanel.classList.toggle('active', mode === 'camera');
       drawButtons.style.display = mode === 'draw' ? 'flex' : 'none';
       statusEl.textContent = '';
+    }
+
+    function setOutputView(view) {
+      const showTranscript = view === 'transcript';
+      transcriptTab.classList.toggle('active', showTranscript);
+      scrapbookTab.classList.toggle('active', !showTranscript);
+      transcriptTab.setAttribute('aria-selected', String(showTranscript));
+      scrapbookTab.setAttribute('aria-selected', String(!showTranscript));
+      transcriptPanel.classList.toggle('active', showTranscript);
+      scrapbookPanel.classList.toggle('active', !showTranscript);
+
+      if (!showTranscript) {
+        queueAnimation();
+        renderScrapbook();
+      }
     }
 
     // --- Clear ---
@@ -327,9 +918,7 @@
       clearTimeout(recognizeTimer);
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      resultEl.textContent = 'Recognized text will appear here...';
-      resultEl.classList.add('placeholder');
-      statusEl.textContent = '';
+      resetResult();
     });
 
     // --- Undo ---
@@ -341,12 +930,14 @@
       if (trace.length > 0) {
         recognizeTimer = setTimeout(recognize, 500);
       } else {
-        resultEl.textContent = 'Recognized text will appear here...';
-        resultEl.classList.add('placeholder');
+        resetResult();
       }
     });
 
     chooseImageBtn.addEventListener('click', () => imageInput.click());
+    startCameraBtn.addEventListener('click', startCamera);
+    capturePhotoBtn.addEventListener('click', captureCameraFrame);
+    stopCameraBtn.addEventListener('click', stopCamera);
 
     imageInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -385,23 +976,82 @@
     }
 
     function resetResult() {
+      latestRecognizedText = '';
       resultEl.textContent = 'Recognized text will appear here...';
       resultEl.classList.add('placeholder');
       statusEl.textContent = '';
+      renderScrapbook();
     }
 
     function clearImage() {
       uploadedImageDataUrl = null;
       imageInput.value = '';
+      stopCamera();
       imagePreview.hidden = true;
       imagePreview.removeAttribute('src');
+      cameraPreview.hidden = true;
       uploadPlaceholder.hidden = false;
       uploadDropzone.classList.remove('has-image');
       resetResult();
     }
 
+    async function startCamera() {
+      try {
+        setMode('camera');
+        stopCamera();
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' }
+          },
+          audio: false
+        });
+        cameraPreview.srcObject = cameraStream;
+        cameraPreview.hidden = false;
+        cameraPlaceholder.hidden = true;
+        imagePreview.hidden = true;
+        imagePreview.removeAttribute('src');
+        statusEl.textContent = 'Camera ready. Hold up your handwriting and capture a photo.';
+      } catch (error) {
+        statusEl.textContent = `Camera unavailable: ${error.message}`;
+      }
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+        cameraStream = null;
+      }
+      cameraPreview.srcObject = null;
+      cameraPreview.hidden = true;
+      cameraPlaceholder.hidden = false;
+    }
+
+    async function captureCameraFrame() {
+      if (!cameraStream || !cameraPreview.videoWidth || !cameraPreview.videoHeight) {
+        statusEl.textContent = 'Start the camera before capturing a photo.';
+        return;
+      }
+
+      const captureCanvas = document.createElement('canvas');
+      captureCanvas.width = cameraPreview.videoWidth;
+      captureCanvas.height = cameraPreview.videoHeight;
+      const captureCtx = captureCanvas.getContext('2d');
+      captureCtx.drawImage(cameraPreview, 0, 0, captureCanvas.width, captureCanvas.height);
+      const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.92);
+
+      stopCamera();
+      setMode('upload');
+      uploadedImageDataUrl = imageDataUrl;
+      imagePreview.src = imageDataUrl;
+      imagePreview.hidden = false;
+      uploadPlaceholder.hidden = true;
+      uploadDropzone.classList.add('has-image');
+      await recognizeImage(imageDataUrl);
+    }
+
     async function loadUploadedFile(file) {
       setMode('upload');
+      stopCamera();
       uploadedImageDataUrl = await readFileAsDataUrl(file);
       imagePreview.src = uploadedImageDataUrl;
       imagePreview.hidden = false;
@@ -429,11 +1079,544 @@
     }
 
     function renderTextResult(text, alternatives = []) {
+      latestRecognizedText = text;
       resultEl.textContent = text;
       resultEl.classList.remove('placeholder');
       statusEl.textContent = alternatives.length > 0
         ? `Also matched: ${alternatives.slice(0, 3).join(', ')}`
         : '';
+      addShapeBtn.disabled = !text.trim();
+    }
+
+    function renderScrapbook() {
+      if (!storyFontReady) return;
+
+      scrapbookBadgeEl.textContent = latestRecognizedText.trim()
+        ? currentMode === 'upload' ? 'Latest source: uploaded handwriting' : 'Latest source: live handwriting'
+        : 'Waiting for handwriting';
+      scrapbookDateEl.textContent = shapes.length > 0
+        ? `${shapes.length} movable ${shapes.length === 1 ? 'shape' : 'shapes'}`
+        : 'No floating shapes yet';
+      addShapeBtn.disabled = !latestRecognizedText.trim();
+
+      renderBackgroundStory();
+      renderShapes();
+    }
+
+    function getRenderedShape(shape) {
+      return {
+        ...shape,
+        x: shape.currentX ?? shape.x,
+        y: shape.currentY ?? shape.y,
+        width: shape.currentWidth ?? shape.width,
+        height: shape.currentHeight ?? shape.height,
+        intro: shape.intro ?? 1
+      };
+    }
+
+    function queueAnimation() {
+      if (animationFrameId !== null) return;
+      animationFrameId = requestAnimationFrame(stepShapeAnimations);
+    }
+
+    function isScrapbookVisible() {
+      return scrapbookPanel.classList.contains('active');
+    }
+
+    function stepShapeAnimations() {
+      animationFrameId = null;
+      let keepAnimating = false;
+      const now = performance.now();
+      const pageWidth = Math.max(320, scrapbookPageEl.clientWidth - 6);
+      const pageHeight = Math.max(520, scrapbookPageEl.clientHeight - 12);
+
+      shapes.forEach((shape) => {
+        const isActive = dragState?.id === shape.id || resizeState?.id === shape.id;
+
+        if (shape.currentX == null) shape.currentX = shape.x;
+        if (shape.currentY == null) shape.currentY = shape.y;
+        if (shape.currentWidth == null) shape.currentWidth = shape.width;
+        if (shape.currentHeight == null) shape.currentHeight = shape.height;
+        if (shape.intro == null) shape.intro = 1;
+        if (shape.homeX == null) shape.homeX = shape.x;
+        if (shape.homeY == null) shape.homeY = shape.y;
+        if (shape.driftPhaseX == null) shape.driftPhaseX = Math.random() * Math.PI * 2;
+        if (shape.driftPhaseY == null) shape.driftPhaseY = Math.random() * Math.PI * 2;
+
+        if (isActive) {
+          shape.currentX = shape.x;
+          shape.currentY = shape.y;
+          shape.currentWidth = shape.width;
+          shape.currentHeight = shape.height;
+          shape.intro = 1;
+          return;
+        }
+
+        const driftX = Math.sin(now * SHAPE_DRIFT_SPEED + shape.driftPhaseX) * SHAPE_DRIFT_X;
+        const driftY = Math.cos(now * SHAPE_DRIFT_SPEED * 0.85 + shape.driftPhaseY) * SHAPE_DRIFT_Y;
+        const targetX = clamp(shape.homeX + driftX, 0, pageWidth - shape.width);
+        const targetY = clamp(shape.homeY + driftY, 56, pageHeight - shape.height);
+
+        shape.currentX += (targetX - shape.currentX) * SHAPE_SPRING;
+        shape.currentY += (targetY - shape.currentY) * SHAPE_SPRING;
+        shape.currentWidth += (shape.width - shape.currentWidth) * SHAPE_SPRING;
+        shape.currentHeight += (shape.height - shape.currentHeight) * SHAPE_SPRING;
+        shape.intro += (1 - shape.intro) * 0.14;
+
+        if (isScrapbookVisible() && (
+          Math.abs(targetX - shape.currentX) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(targetY - shape.currentY) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(shape.width - shape.currentWidth) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(shape.height - shape.currentHeight) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(1 - shape.intro) > 0.02
+        )) {
+          keepAnimating = true;
+        }
+      });
+
+      if (isScrapbookVisible()) {
+        renderScrapbook();
+      }
+
+      if (keepAnimating) {
+        queueAnimation();
+      }
+    }
+
+    function renderBackgroundStory() {
+      const surfaceWidth = Math.max(280, Math.floor(scrapbookPageEl.clientWidth - 48));
+      const pageHeight = Math.max(520, Math.floor(scrapbookPageEl.clientHeight - 92));
+      const prepared = prepareWithSegments(BACKGROUND_TEXT, STORY_FONT, { whiteSpace: 'normal' });
+      const obstacles = getObstacleRects();
+      const fragments = [];
+      let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+      let y = 18;
+      let guard = 0;
+
+      backgroundStoryEl.innerHTML = '';
+
+      while (guard < 80) {
+        guard += 1;
+        const gaps = getAvailableGaps(obstacles, y, surfaceWidth);
+        let placedOnRow = false;
+
+        for (const gap of gaps) {
+          if (gap.width < 56) continue;
+          const line = layoutNextLine(prepared, cursor, gap.width);
+          if (!line) break;
+          fragments.push({ line, left: gap.left, top: y, width: gap.width });
+          cursor = line.end;
+          placedOnRow = true;
+        }
+
+        if (!placedOnRow) {
+          y += STORY_LINE_HEIGHT;
+          if (y > pageHeight - STORY_LINE_HEIGHT) break;
+          continue;
+        }
+
+        if (layoutNextLine(prepared, cursor, surfaceWidth - 28) === null) {
+          break;
+        }
+
+        y += STORY_LINE_HEIGHT;
+        if (y > pageHeight - STORY_LINE_HEIGHT) break;
+      }
+
+      if (fragments.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'background-placeholder';
+        placeholder.textContent = 'Upload handwriting and convert it into shapes. Then drag them around this page to watch the background writing reflow around each obstacle.';
+        backgroundStoryEl.appendChild(placeholder);
+        return;
+      }
+
+      fragments.forEach(({ line, left, top, width }, index) => {
+        const div = document.createElement('div');
+        div.className = 'background-line';
+        div.textContent = line.text;
+        div.style.left = `${left}px`;
+        div.style.top = `${top}px`;
+        div.style.width = `${width}px`;
+        if (index % 2 === 0) {
+          div.style.transform = 'rotate(-0.35deg)';
+        } else {
+          div.style.transform = 'rotate(0.25deg)';
+        }
+        backgroundStoryEl.appendChild(div);
+      });
+    }
+
+    function getObstacleRects() {
+      return shapes.map((shape) => {
+        const renderedShape = getRenderedShape(shape);
+        return {
+          left: renderedShape.x - 14,
+          right: renderedShape.x + renderedShape.width + 14,
+          top: renderedShape.y - 10,
+          bottom: renderedShape.y + renderedShape.height + 10
+        };
+      });
+    }
+
+    function getAvailableGaps(obstacles, y, totalWidth) {
+      const horizontalPadding = 14;
+      const rowTop = y;
+      const rowBottom = y + STORY_LINE_HEIGHT - 6;
+      const overlapping = obstacles.filter((obstacle) => (
+        rowBottom > obstacle.top && rowTop < obstacle.bottom
+      ));
+
+      if (overlapping.length === 0) {
+        return [{ left: horizontalPadding, width: totalWidth - horizontalPadding * 2 }];
+      }
+
+      const intervals = overlapping
+        .map((obstacle) => ({
+          start: Math.max(horizontalPadding, obstacle.left),
+          end: Math.min(totalWidth - horizontalPadding, obstacle.right)
+        }))
+        .sort((a, b) => a.start - b.start);
+
+      const gaps = [];
+      let cursor = horizontalPadding;
+
+      for (const interval of intervals) {
+        if (interval.start > cursor) {
+          gaps.push({ left: cursor, width: interval.start - cursor });
+        }
+        cursor = Math.max(cursor, interval.end);
+      }
+
+      if (cursor < totalWidth - horizontalPadding) {
+        gaps.push({ left: cursor, width: totalWidth - horizontalPadding - cursor });
+      }
+
+      if (gaps.length === 0) {
+        return [];
+      }
+
+      return gaps;
+    }
+
+    // Font for shape text - matches .shape-card-text CSS (0.9rem = 14.4px)
+    const SHAPE_TEXT_FONT = '14.4px "IBM Plex Sans", sans-serif';
+    const SHAPE_LINE_HEIGHT = 19.44; // 14.4px * 1.35 line-height
+    const SHAPE_TEXT_MIN_WIDTH = 30;
+
+    // Get available text width at a given Y position within a shape
+    // Y is relative to the top of the text area (after title)
+    function getTextWidthAtY(type, shapeWidth, shapeHeight, y, paddingLeft, paddingRight, paddingTop) {
+      if (type === 'sticky') {
+        // Rectangle - full width available
+        return shapeWidth - paddingLeft - paddingRight;
+      }
+      
+      if (type === 'circle') {
+        // Circle: use equation (x - cx)² + (y - cy)² = r²
+        // The text area starts after paddingTop, so adjust y to be relative to shape
+        const absoluteY = y + paddingTop;
+        const cx = shapeWidth / 2;
+        const cy = shapeHeight / 2;
+        const r = Math.min(shapeWidth, shapeHeight) / 2;
+        
+        const dy = absoluteY - cy;
+        if (Math.abs(dy) >= r) return 0; // Outside circle
+        
+        const dx = Math.sqrt(r * r - dy * dy);
+        const leftEdge = cx - dx;
+        const rightEdge = cx + dx;
+        
+        // Account for padding - text can't go beyond padding bounds
+        const effectiveLeft = Math.max(leftEdge, paddingLeft);
+        const effectiveRight = Math.min(rightEdge, shapeWidth - paddingRight);
+        
+        return Math.max(0, effectiveRight - effectiveLeft);
+      }
+      
+      if (type === 'heart') {
+        const absoluteY = y + paddingTop;
+
+        if (absoluteY < shapeHeight * 0.12 || absoluteY > shapeHeight) return 0;
+
+        const normalizedY = absoluteY / shapeHeight;
+        let halfWidthRatio;
+
+        if (normalizedY <= 0.24) {
+          halfWidthRatio = 0.16 + ((normalizedY - 0.12) / 0.12) * 0.12;
+        } else if (normalizedY <= 0.52) {
+          halfWidthRatio = 0.28 + ((normalizedY - 0.24) / 0.28) * 0.16;
+        } else {
+          halfWidthRatio = 0.44 * (1 - ((normalizedY - 0.52) / 0.48));
+        }
+
+        const cx = shapeWidth / 2;
+        const halfWidth = shapeWidth * Math.max(0, halfWidthRatio);
+        const leftEdge = cx - halfWidth;
+        const rightEdge = cx + halfWidth;
+        const effectiveLeft = Math.max(leftEdge, paddingLeft);
+        const effectiveRight = Math.min(rightEdge, shapeWidth - paddingRight);
+
+        return Math.max(0, effectiveRight - effectiveLeft);
+      }
+      
+      return shapeWidth - paddingLeft - paddingRight;
+    }
+
+    function getShapePadding(shapeType) {
+      if (shapeType === 'circle') {
+        return { left: 16, right: 16, top: 14.4, bottom: 14.4 };
+      }
+
+      if (shapeType === 'heart') {
+        return { left: 20, right: 20, top: 32, bottom: 48 };
+      }
+
+      return { left: 16, right: 16, top: 14, bottom: 14 };
+    }
+
+    function appendShapeText(textEl, shape) {
+      const prepared = prepareWithSegments(shape.text, SHAPE_TEXT_FONT, { whiteSpace: 'normal' });
+      const padding = getShapePadding(shape.type);
+      const titleHeight = 20;
+      const textAreaTop = padding.top + titleHeight;
+      const textAreaHeight = shape.height - textAreaTop - padding.bottom;
+      let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+      let y = 0;
+      let guard = 0;
+
+      while (guard < 20 && y < textAreaHeight) {
+        guard += 1;
+        const availableWidth = getTextWidthAtY(
+          shape.type,
+          shape.width,
+          shape.height,
+          y + SHAPE_LINE_HEIGHT / 2,
+          padding.left,
+          padding.right,
+          textAreaTop
+        );
+
+        if (availableWidth < SHAPE_TEXT_MIN_WIDTH) {
+          y += SHAPE_LINE_HEIGHT;
+          continue;
+        }
+
+        const line = layoutNextLine(prepared, cursor, availableWidth);
+        if (!line) break;
+
+        const lineEl = document.createElement('div');
+        lineEl.style.textAlign = shape.type === 'sticky' ? 'left' : 'center';
+        lineEl.style.width = '100%';
+        lineEl.textContent = line.text;
+        textEl.appendChild(lineEl);
+
+        cursor = line.end;
+        y += SHAPE_LINE_HEIGHT;
+      }
+    }
+
+    function renderShapes() {
+      floatingShapesEl.innerHTML = '';
+
+      shapes.forEach((shape) => {
+        const renderedShape = getRenderedShape(shape);
+        const element = document.createElement('div');
+        element.className = `shape-card ${shape.type}`;
+        if (dragState?.id === shape.id) {
+          element.classList.add('is-dragging');
+        }
+        if (resizeState?.id === shape.id) {
+          element.classList.add('is-resizing');
+        }
+        element.dataset.shapeId = shape.id;
+        element.style.left = `${renderedShape.x}px`;
+        element.style.top = `${renderedShape.y}px`;
+        element.style.width = `${renderedShape.width}px`;
+        element.style.height = `${renderedShape.height}px`;
+        element.style.opacity = `${0.4 + renderedShape.intro * 0.6}`;
+        element.style.transform = `${shape.type === 'sticky' ? 'rotate(-3deg)' : shape.type === 'circle' ? 'rotate(6deg)' : 'rotate(-5deg)'} scale(${0.82 + renderedShape.intro * 0.18})`;
+
+        const title = document.createElement('div');
+        title.className = 'shape-card-title';
+        title.textContent = shape.type;
+
+        const text = document.createElement('div');
+        text.className = 'shape-card-text';
+        appendShapeText(text, renderedShape);
+
+        element.appendChild(title);
+        element.appendChild(text);
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'shape-resize-handle';
+        resizeHandle.title = 'Resize shape';
+        resizeHandle.addEventListener('pointerdown', startShapeResize);
+        element.appendChild(resizeHandle);
+        element.addEventListener('pointerdown', startShapeDrag);
+        floatingShapesEl.appendChild(element);
+      });
+    }
+
+    function getRandomShapePlacement(width, height) {
+      const surfaceWidth = Math.max(320, scrapbookPageEl.clientWidth - 48);
+      const surfaceHeight = Math.max(520, scrapbookPageEl.clientHeight - 108);
+      const minX = 24;
+      const maxX = Math.max(minX, surfaceWidth - width - 24);
+      const zones = [
+        { top: 72, bottom: Math.max(72, surfaceHeight * 0.28) },
+        { top: Math.max(110, surfaceHeight * 0.32), bottom: Math.max(120, surfaceHeight * 0.58) },
+        { top: Math.max(160, surfaceHeight * 0.62), bottom: Math.max(170, surfaceHeight - height - 28) }
+      ];
+      const zone = zones[shapes.length % zones.length];
+      const minY = Math.min(zone.top, zone.bottom);
+      const maxY = Math.max(minY, zone.bottom);
+
+      return {
+        x: minX + Math.random() * (maxX - minX),
+        y: minY + Math.random() * Math.max(0, maxY - minY)
+      };
+    }
+
+    function createShapeFromText(text) {
+      const cleaned = text.replace(/\s+/g, ' ').trim();
+      if (!cleaned) return;
+
+      const type = SHAPE_TYPES[shapes.length % SHAPE_TYPES.length];
+      const shapeText = cleaned.split(' ').slice(0, 16).join(' ');
+      const { width, height } = getShapeSize(type);
+      const { x, y } = getRandomShapePlacement(width, height);
+
+      shapes.push({
+        id: crypto.randomUUID(),
+        type,
+        text: shapeText,
+        width,
+        height,
+        x,
+        y,
+        homeX: x,
+        homeY: y,
+        currentX: x + 18,
+        currentY: y - 32,
+        currentWidth: width * 0.82,
+        currentHeight: height * 0.82,
+        intro: 0,
+        driftPhaseX: Math.random() * Math.PI * 2,
+        driftPhaseY: Math.random() * Math.PI * 2
+      });
+
+      queueAnimation();
+      renderScrapbook();
+    }
+
+    function getShapeSize(type) {
+      if (type === 'circle') return { width: 144, height: 144 };
+      if (type === 'heart') return { width: 160, height: 144 };
+      return { width: 152, height: 132 };
+    }
+
+    function startShapeDrag(event) {
+      if (event.target.closest('.shape-resize-handle') || resizeState) return;
+      const shapeId = event.currentTarget.dataset.shapeId;
+      const shape = shapes.find((item) => item.id === shapeId);
+      if (!shape) return;
+
+      const pageRect = scrapbookPageEl.getBoundingClientRect();
+      dragState = {
+        id: shape.id,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - pageRect.left - shape.x,
+        offsetY: event.clientY - pageRect.top - shape.y
+      };
+
+      event.preventDefault();
+      document.addEventListener('pointermove', handleShapeDrag);
+      document.addEventListener('pointerup', endShapeDrag);
+      document.addEventListener('pointercancel', endShapeDrag);
+      renderShapes();
+    }
+
+    function handleShapeDrag(event) {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      const pageRect = scrapbookPageEl.getBoundingClientRect();
+      const shape = shapes.find((item) => item.id === dragState.id);
+      if (!shape) return;
+
+      event.preventDefault();
+      shape.x = clamp(event.clientX - pageRect.left - dragState.offsetX, 0, pageRect.width - shape.width - 6);
+      shape.y = clamp(event.clientY - pageRect.top - dragState.offsetY, 56, pageRect.height - shape.height - 12);
+      shape.homeX = shape.x;
+      shape.homeY = shape.y;
+      shape.currentX = shape.x;
+      shape.currentY = shape.y;
+      renderScrapbook();
+    }
+
+    function endShapeDrag(event) {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      document.removeEventListener('pointermove', handleShapeDrag);
+      document.removeEventListener('pointerup', endShapeDrag);
+      document.removeEventListener('pointercancel', endShapeDrag);
+      dragState = null;
+      queueAnimation();
+      renderScrapbook();
+    }
+
+    function startShapeResize(event) {
+      event.stopPropagation();
+      const shapeId = event.currentTarget.parentElement.dataset.shapeId;
+      const shape = shapes.find((item) => item.id === shapeId);
+      if (!shape || dragState) return;
+
+      resizeState = {
+        id: shape.id,
+        pointerId: event.pointerId,
+        startWidth: shape.width,
+        startHeight: shape.height,
+        startX: event.clientX,
+        startY: event.clientY
+      };
+
+      event.preventDefault();
+      document.addEventListener('pointermove', handleShapeResize);
+      document.addEventListener('pointerup', endShapeResize);
+      document.addEventListener('pointercancel', endShapeResize);
+      renderShapes();
+    }
+
+    function handleShapeResize(event) {
+      if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+      const pageRect = scrapbookPageEl.getBoundingClientRect();
+      const shape = shapes.find((item) => item.id === resizeState.id);
+      if (!shape) return;
+
+      const minWidth = 110;
+      const minHeight = 100;
+      const maxWidth = Math.max(minWidth, pageRect.width - shape.x - 6);
+      const maxHeight = Math.max(minHeight, pageRect.height - shape.y - 12);
+      const nextWidth = resizeState.startWidth + (event.clientX - resizeState.startX);
+      const nextHeight = resizeState.startHeight + (event.clientY - resizeState.startY);
+
+      event.preventDefault();
+      shape.width = clamp(nextWidth, minWidth, maxWidth);
+      shape.height = clamp(nextHeight, minHeight, maxHeight);
+      shape.currentWidth = shape.width;
+      shape.currentHeight = shape.height;
+      renderScrapbook();
+    }
+
+    function endShapeResize(event) {
+      if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+      document.removeEventListener('pointermove', handleShapeResize);
+      document.removeEventListener('pointerup', endShapeResize);
+      document.removeEventListener('pointercancel', endShapeResize);
+      resizeState = null;
+      queueAnimation();
+      renderScrapbook();
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
     }
 
     // --- Recognize via Google Input Tools ---
@@ -496,6 +1679,8 @@
         if (result.text) {
           renderTextResult(result.text);
           statusEl.textContent = 'Handwriting recognized from image';
+          createShapeFromText(result.text);
+          setOutputView('scrapbook');
         } else {
           renderTextResult('Could not recognize text from this image.');
         }
@@ -504,6 +1689,11 @@
         console.error(err);
       }
     }
+
+    document.fonts.load(STORY_FONT).then(() => {
+      storyFontReady = true;
+      renderScrapbook();
+    });
   </script>
 </body>
 </html>
