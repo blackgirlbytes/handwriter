@@ -1354,6 +1354,26 @@
       });
     }
 
+    function getRandomShapePlacement(width, height) {
+      const surfaceWidth = Math.max(320, scrapbookPageEl.clientWidth - 48);
+      const surfaceHeight = Math.max(520, scrapbookPageEl.clientHeight - 108);
+      const minX = 24;
+      const maxX = Math.max(minX, surfaceWidth - width - 24);
+      const zones = [
+        { top: 72, bottom: Math.max(72, surfaceHeight * 0.28) },
+        { top: Math.max(110, surfaceHeight * 0.32), bottom: Math.max(120, surfaceHeight * 0.58) },
+        { top: Math.max(160, surfaceHeight * 0.62), bottom: Math.max(170, surfaceHeight - height - 28) }
+      ];
+      const zone = zones[shapes.length % zones.length];
+      const minY = Math.min(zone.top, zone.bottom);
+      const maxY = Math.max(minY, zone.bottom);
+
+      return {
+        x: minX + Math.random() * (maxX - minX),
+        y: minY + Math.random() * Math.max(0, maxY - minY)
+      };
+    }
+
     function createShapeFromText(text) {
       const cleaned = text.replace(/\s+/g, ' ').trim();
       if (!cleaned) return;
@@ -1361,9 +1381,7 @@
       const type = SHAPE_TYPES[shapes.length % SHAPE_TYPES.length];
       const shapeText = cleaned.split(' ').slice(0, 16).join(' ');
       const { width, height } = getShapeSize(type);
-      const pageWidth = Math.max(320, scrapbookPageEl.clientWidth - 48);
-      const x = 60 + (shapes.length % 3) * 150;
-      const y = 110 + Math.floor(shapes.length / 3) * 150;
+      const { x, y } = getRandomShapePlacement(width, height);
 
       shapes.push({
         id: crypto.randomUUID(),
@@ -1371,11 +1389,11 @@
         text: shapeText,
         width,
         height,
-        x: Math.min(x, pageWidth - width - 20),
+        x,
         y,
-        homeX: Math.min(x, pageWidth - width - 20),
+        homeX: x,
         homeY: y,
-        currentX: Math.min(x, pageWidth - width - 20) + 18,
+        currentX: x + 18,
         currentY: y - 32,
         currentWidth: width * 0.82,
         currentHeight: height * 0.82,
