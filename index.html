@@ -239,6 +239,10 @@
       flex-wrap: wrap;
     }
 
+    .upload-actions.camera-actions {
+      margin-top: 0.5rem;
+    }
+
     .upload-input {
       display: none;
     }
@@ -671,10 +675,12 @@
         <input class="upload-input" id="imageInput" type="file" accept="image/*">
         <div class="upload-actions">
           <button id="chooseImageBtn" class="primary">Choose Image</button>
-          <button id="startCameraBtn">Use Camera</button>
-          <button id="capturePhotoBtn">Capture Photo</button>
-          <button id="stopCameraBtn">Stop Camera</button>
           <button id="clearImageBtn">Clear Image</button>
+        </div>
+        <div class="upload-actions camera-actions">
+          <button id="startCameraBtn">Open Camera</button>
+          <button id="capturePhotoBtn" class="primary">Take Photo</button>
+          <button id="stopCameraBtn">Stop Camera</button>
         </div>
         <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
       </div>
