@@ -551,8 +551,6 @@
 
     .shape-resize-handle {
       position: absolute;
-      right: 10px;
-      bottom: 10px;
       width: 22px;
       height: 22px;
       border-radius: 999px;
@@ -588,11 +586,8 @@
       transform: rotate(45deg);
     }
 
-    .shape-card.heart .shape-resize-handle {
-      left: auto;
-      right: 28px;
-      bottom: 38px;
-      transform: none;
+    .shape-resize-handle.is-active {
+      box-shadow: 0 10px 18px rgba(24, 20, 12, 0.34);
     }
 
     .scrapbook-empty-tip {
@@ -1250,13 +1245,20 @@
 
         element.appendChild(title);
         element.appendChild(text);
-        const resizeHandle = document.createElement('div');
-        resizeHandle.className = 'shape-resize-handle';
-        resizeHandle.title = 'Resize shape';
-        resizeHandle.addEventListener('pointerdown', startShapeResize);
-        element.appendChild(resizeHandle);
         element.addEventListener('pointerdown', startShapeDrag);
         floatingShapesEl.appendChild(element);
+
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'shape-resize-handle';
+        if (resizeState?.id === shape.id) {
+          resizeHandle.classList.add('is-active');
+        }
+        resizeHandle.dataset.shapeId = shape.id;
+        resizeHandle.title = 'Resize shape';
+        resizeHandle.style.left = `${shape.x + shape.width - 6}px`;
+        resizeHandle.style.top = `${shape.y + shape.height - 6}px`;
+        resizeHandle.addEventListener('pointerdown', startShapeResize);
+        floatingShapesEl.appendChild(resizeHandle);
       });
     }
 
@@ -1334,7 +1336,7 @@
 
     function startShapeResize(event) {
       event.stopPropagation();
-      const shapeId = event.currentTarget.parentElement.dataset.shapeId;
+      const shapeId = event.currentTarget.dataset.shapeId;
       const shape = shapes.find((item) => item.id === shapeId);
       if (!shape || dragState) return;
 
