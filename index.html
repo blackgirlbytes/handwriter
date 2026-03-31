@@ -28,6 +28,28 @@
       margin-bottom: 2rem;
     }
 
+    .mode-switcher {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .mode-btn.active {
+      background: #4a9eff;
+      border-color: #4a9eff;
+      color: #fff;
+    }
+
+    .input-panel {
+      display: none;
+      width: 500px;
+      margin-bottom: 1rem;
+    }
+
+    .input-panel.active {
+      display: block;
+    }
+
     .canvas-container {
       position: relative;
       background: #fff;
@@ -96,19 +118,99 @@
       font-size: 0.8rem;
       margin-bottom: 1rem;
     }
+
+    .upload-dropzone {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 180px;
+      padding: 1.5rem;
+      background: #1a1a1a;
+      border: 1px dashed #444;
+      border-radius: 12px;
+      color: #9a9a9a;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .upload-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+    }
+
+    .upload-placeholder i {
+      width: 40px;
+      height: 40px;
+      color: #7f7f7f;
+    }
+
+    .upload-dropzone:hover {
+      background: #202020;
+      border-color: #666;
+    }
+
+    .upload-dropzone.has-image {
+      padding: 0;
+      min-height: auto;
+      overflow: hidden;
+    }
+
+    .upload-dropzone img {
+      display: block;
+      width: 100%;
+      max-height: 340px;
+      object-fit: contain;
+      background: #111;
+    }
+
+    .upload-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .upload-input {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h1>Handwriting to Text</h1>
-  <p class="subtitle">Draw handwriting, get typed text</p>
+  <p class="subtitle">Draw handwriting or upload an image to extract typed text</p>
 
-  <div class="canvas-container">
-    <canvas id="canvas" width="500" height="300"></canvas>
+  <div class="mode-switcher">
+    <button class="mode-btn active" id="drawModeBtn">Draw</button>
+    <button class="mode-btn" id="uploadModeBtn">Upload Image</button>
   </div>
 
-  <p class="hint">Recognition happens automatically when you stop writing</p>
+  <div class="input-panel active" id="drawPanel">
+    <div class="canvas-container">
+      <canvas id="canvas" width="500" height="300"></canvas>
+    </div>
+    <p class="hint">Recognition happens automatically when you stop writing</p>
+  </div>
 
-  <div class="buttons">
+  <div class="input-panel" id="uploadPanel">
+    <label class="upload-dropzone" id="uploadDropzone" for="imageInput">
+      <div class="upload-placeholder" id="uploadPlaceholder">
+        <i data-lucide="image-up"></i>
+        <span>Choose a handwritten image or drag it here</span>
+      </div>
+      <img id="imagePreview" alt="Uploaded handwriting preview" hidden>
+    </label>
+    <input class="upload-input" id="imageInput" type="file" accept="image/*">
+    <div class="upload-actions">
+      <button id="chooseImageBtn" class="primary">Choose Image</button>
+      <button id="clearImageBtn">Clear Image</button>
+    </div>
+    <p class="hint">Best results come from high-contrast handwriting with good lighting</p>
+  </div>
+
+  <div class="buttons" id="drawButtons">
     <button id="clearBtn">Clear</button>
     <button id="undoBtn">Undo</button>
   </div>
@@ -117,11 +219,23 @@
 
   <div class="result placeholder" id="result">Recognized text will appear here...</div>
 
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const clearBtn = document.getElementById('clearBtn');
     const undoBtn = document.getElementById('undoBtn');
+    const drawModeBtn = document.getElementById('drawModeBtn');
+    const uploadModeBtn = document.getElementById('uploadModeBtn');
+    const drawPanel = document.getElementById('drawPanel');
+    const uploadPanel = document.getElementById('uploadPanel');
+    const drawButtons = document.getElementById('drawButtons');
+    const imageInput = document.getElementById('imageInput');
+    const chooseImageBtn = document.getElementById('chooseImageBtn');
+    const clearImageBtn = document.getElementById('clearImageBtn');
+    const uploadDropzone = document.getElementById('uploadDropzone');
+    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const imagePreview = document.getElementById('imagePreview');
     const statusEl = document.getElementById('status');
     const resultEl = document.getElementById('result');
 
@@ -130,6 +244,10 @@
     let currentStroke = null;
     let drawing = false;
     let recognizeTimer = null;
+    let currentMode = 'draw';
+    let uploadedImageDataUrl = null;
+
+    lucide.createIcons();
 
     // --- Canvas setup ---
     ctx.fillStyle = '#fff';
@@ -149,6 +267,7 @@
     }
 
     canvas.addEventListener('pointerdown', (e) => {
+      if (currentMode !== 'draw') return;
       drawing = true;
       clearTimeout(recognizeTimer);
       const [x, y] = getPos(e);
@@ -158,6 +277,7 @@
     });
 
     canvas.addEventListener('pointermove', (e) => {
+      if (currentMode !== 'draw') return;
       if (!drawing || !currentStroke) return;
       const [x, y] = getPos(e);
       currentStroke[0].push(x);
@@ -187,6 +307,19 @@
     canvas.addEventListener('pointerup', endStroke);
     canvas.addEventListener('pointerleave', endStroke);
 
+    drawModeBtn.addEventListener('click', () => setMode('draw'));
+    uploadModeBtn.addEventListener('click', () => setMode('upload'));
+
+    function setMode(mode) {
+      currentMode = mode;
+      drawModeBtn.classList.toggle('active', mode === 'draw');
+      uploadModeBtn.classList.toggle('active', mode === 'upload');
+      drawPanel.classList.toggle('active', mode === 'draw');
+      uploadPanel.classList.toggle('active', mode === 'upload');
+      drawButtons.style.display = mode === 'draw' ? 'flex' : 'none';
+      statusEl.textContent = '';
+    }
+
     // --- Clear ---
     clearBtn.addEventListener('click', () => {
       trace = [];
@@ -213,6 +346,27 @@
       }
     });
 
+    chooseImageBtn.addEventListener('click', () => imageInput.click());
+
+    imageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      await loadUploadedFile(file);
+    });
+
+    clearImageBtn.addEventListener('click', clearImage);
+
+    uploadDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    uploadDropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      await loadUploadedFile(file);
+    });
+
     function redrawCanvas() {
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -230,8 +384,61 @@
       }
     }
 
+    function resetResult() {
+      resultEl.textContent = 'Recognized text will appear here...';
+      resultEl.classList.add('placeholder');
+      statusEl.textContent = '';
+    }
+
+    function clearImage() {
+      uploadedImageDataUrl = null;
+      imageInput.value = '';
+      imagePreview.hidden = true;
+      imagePreview.removeAttribute('src');
+      uploadPlaceholder.hidden = false;
+      uploadDropzone.classList.remove('has-image');
+      resetResult();
+    }
+
+    async function loadUploadedFile(file) {
+      setMode('upload');
+      uploadedImageDataUrl = await readFileAsDataUrl(file);
+      imagePreview.src = uploadedImageDataUrl;
+      imagePreview.hidden = false;
+      uploadPlaceholder.hidden = true;
+      uploadDropzone.classList.add('has-image');
+      await recognizeImage(uploadedImageDataUrl);
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function renderTextResult(text, alternatives = []) {
+      resultEl.textContent = text;
+      resultEl.classList.remove('placeholder');
+      statusEl.textContent = alternatives.length > 0
+        ? `Also matched: ${alternatives.slice(0, 3).join(', ')}`
+        : '';
+    }
+
     // --- Recognize via Google Input Tools ---
     async function recognize() {
+      if (currentMode !== 'draw' || trace.length === 0) return;
       statusEl.textContent = 'Recognizing...';
 
       const data = JSON.stringify({
@@ -260,13 +467,37 @@
 
         if (result[0] === 'SUCCESS' && result[1] && result[1][0] && result[1][0][1]) {
           const candidates = result[1][0][1];
-          resultEl.textContent = candidates[0];
-          resultEl.classList.remove('placeholder');
-          statusEl.textContent = `Also matched: ${candidates.slice(1, 4).join(', ')}`;
+          renderTextResult(candidates[0], candidates.slice(1));
         } else {
-          resultEl.textContent = 'Could not recognize text.';
-          resultEl.classList.remove('placeholder');
-          statusEl.textContent = '';
+          renderTextResult('Could not recognize text.');
+        }
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+        console.error(err);
+      }
+    }
+
+    async function recognizeImage(imageSource) {
+      statusEl.textContent = 'Sending image to handwriting recognizer...';
+
+      try {
+        const response = await fetch('/recognize-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imageSource })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to recognize image');
+        }
+
+        if (result.text) {
+          renderTextResult(result.text);
+          statusEl.textContent = 'Handwriting recognized from image';
+        } else {
+          renderTextResult('Could not recognize text from this image.');
         }
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
