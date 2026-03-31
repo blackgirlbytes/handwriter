@@ -466,6 +466,11 @@
       box-shadow: 0 20px 34px rgba(24, 20, 12, 0.24);
     }
 
+    .shape-card.is-resizing {
+      cursor: nwse-resize;
+      box-shadow: 0 20px 34px rgba(24, 20, 12, 0.24);
+    }
+
     .shape-card.sticky,
     .shape-card.circle,
     .shape-card.heart {
@@ -529,6 +534,21 @@
       font-size: 0.9rem;
       line-height: 1.35;
       overflow-wrap: anywhere;
+    }
+
+    .shape-resize-handle {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(64, 55, 41, 0.18);
+      background:
+        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3) 45%, rgba(64, 55, 41, 0.18) 100%);
+      box-shadow: 0 6px 14px rgba(24, 20, 12, 0.18);
+      cursor: nwse-resize;
+      z-index: 2;
     }
 
     .scrapbook-empty-tip {
@@ -692,6 +712,7 @@
     let latestRecognizedText = '';
     let shapes = [];
     let dragState = null;
+    let resizeState = null;
 
     const STORY_FONT = '26px Caveat';
     const STORY_LINE_HEIGHT = 33;
@@ -1123,11 +1144,14 @@
         if (dragState?.id === shape.id) {
           element.classList.add('is-dragging');
         }
+        if (resizeState?.id === shape.id) {
+          element.classList.add('is-resizing');
+        }
         element.dataset.shapeId = shape.id;
         element.style.left = `${shape.x}px`;
         element.style.top = `${shape.y}px`;
         element.style.width = `${shape.width}px`;
-        element.style.minHeight = `${shape.height}px`;
+        element.style.height = `${shape.height}px`;
 
         const title = document.createElement('div');
         title.className = 'shape-card-title';
@@ -1196,6 +1220,11 @@
 
         element.appendChild(title);
         element.appendChild(text);
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'shape-resize-handle';
+        resizeHandle.title = 'Resize shape';
+        resizeHandle.addEventListener('pointerdown', startShapeResize);
+        element.appendChild(resizeHandle);
         element.addEventListener('pointerdown', startShapeDrag);
         floatingShapesEl.appendChild(element);
       });
@@ -1232,6 +1261,7 @@
     }
 
     function startShapeDrag(event) {
+      if (event.target.closest('.shape-resize-handle') || resizeState) return;
       const shapeId = event.currentTarget.dataset.shapeId;
       const shape = shapes.find((item) => item.id === shapeId);
       if (!shape) return;
@@ -1269,6 +1299,56 @@
       document.removeEventListener('pointerup', endShapeDrag);
       document.removeEventListener('pointercancel', endShapeDrag);
       dragState = null;
+      renderScrapbook();
+    }
+
+    function startShapeResize(event) {
+      event.stopPropagation();
+      const shapeId = event.currentTarget.parentElement.dataset.shapeId;
+      const shape = shapes.find((item) => item.id === shapeId);
+      if (!shape || dragState) return;
+
+      resizeState = {
+        id: shape.id,
+        pointerId: event.pointerId,
+        startWidth: shape.width,
+        startHeight: shape.height,
+        startX: event.clientX,
+        startY: event.clientY
+      };
+
+      event.preventDefault();
+      document.addEventListener('pointermove', handleShapeResize);
+      document.addEventListener('pointerup', endShapeResize);
+      document.addEventListener('pointercancel', endShapeResize);
+      renderShapes();
+    }
+
+    function handleShapeResize(event) {
+      if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+      const pageRect = scrapbookPageEl.getBoundingClientRect();
+      const shape = shapes.find((item) => item.id === resizeState.id);
+      if (!shape) return;
+
+      const minWidth = 110;
+      const minHeight = 100;
+      const maxWidth = Math.max(minWidth, pageRect.width - shape.x - 6);
+      const maxHeight = Math.max(minHeight, pageRect.height - shape.y - 12);
+      const nextWidth = resizeState.startWidth + (event.clientX - resizeState.startX);
+      const nextHeight = resizeState.startHeight + (event.clientY - resizeState.startY);
+
+      event.preventDefault();
+      shape.width = clamp(nextWidth, minWidth, maxWidth);
+      shape.height = clamp(nextHeight, minHeight, maxHeight);
+      renderScrapbook();
+    }
+
+    function endShapeResize(event) {
+      if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+      document.removeEventListener('pointermove', handleShapeResize);
+      document.removeEventListener('pointerup', endShapeResize);
+      document.removeEventListener('pointercancel', endShapeResize);
+      resizeState = null;
       renderScrapbook();
     }
 
