@@ -766,6 +766,9 @@
     const BACKGROUND_TEXT = `The page begins with a quiet stream of writing, the kind that feels like a journal entry already living on the paper before anything new arrives. Then the uploaded handwriting comes in like found fragments, little memories that can be turned into floating keepsakes. Move them around and the rest of the page keeps adjusting, making room as if the paper itself is thinking about composition in real time. This is where pretext starts to feel useful instead of theoretical, because every line can become narrower or wider depending on what is drifting through the page.`;
     const SHAPE_SPRING = 0.18;
     const SHAPE_SETTLE_EPSILON = 0.35;
+    const SHAPE_DRIFT_SPEED = 0.00055;
+    const SHAPE_DRIFT_X = 18;
+    const SHAPE_DRIFT_Y = 12;
 
     lucide.createIcons();
 
@@ -860,6 +863,7 @@
       scrapbookPanel.classList.toggle('active', !showTranscript);
 
       if (!showTranscript) {
+        queueAnimation();
         renderScrapbook();
       }
     }
@@ -1012,9 +1016,16 @@
       animationFrameId = requestAnimationFrame(stepShapeAnimations);
     }
 
+    function isScrapbookVisible() {
+      return scrapbookPanel.classList.contains('active');
+    }
+
     function stepShapeAnimations() {
       animationFrameId = null;
       let keepAnimating = false;
+      const now = performance.now();
+      const pageWidth = Math.max(320, scrapbookPageEl.clientWidth - 6);
+      const pageHeight = Math.max(520, scrapbookPageEl.clientHeight - 12);
 
       shapes.forEach((shape) => {
         const isActive = dragState?.id === shape.id || resizeState?.id === shape.id;
@@ -1024,6 +1035,10 @@
         if (shape.currentWidth == null) shape.currentWidth = shape.width;
         if (shape.currentHeight == null) shape.currentHeight = shape.height;
         if (shape.intro == null) shape.intro = 1;
+        if (shape.homeX == null) shape.homeX = shape.x;
+        if (shape.homeY == null) shape.homeY = shape.y;
+        if (shape.driftPhaseX == null) shape.driftPhaseX = Math.random() * Math.PI * 2;
+        if (shape.driftPhaseY == null) shape.driftPhaseY = Math.random() * Math.PI * 2;
 
         if (isActive) {
           shape.currentX = shape.x;
@@ -1034,24 +1049,31 @@
           return;
         }
 
-        shape.currentX += (shape.x - shape.currentX) * SHAPE_SPRING;
-        shape.currentY += (shape.y - shape.currentY) * SHAPE_SPRING;
+        const driftX = Math.sin(now * SHAPE_DRIFT_SPEED + shape.driftPhaseX) * SHAPE_DRIFT_X;
+        const driftY = Math.cos(now * SHAPE_DRIFT_SPEED * 0.85 + shape.driftPhaseY) * SHAPE_DRIFT_Y;
+        const targetX = clamp(shape.homeX + driftX, 0, pageWidth - shape.width);
+        const targetY = clamp(shape.homeY + driftY, 56, pageHeight - shape.height);
+
+        shape.currentX += (targetX - shape.currentX) * SHAPE_SPRING;
+        shape.currentY += (targetY - shape.currentY) * SHAPE_SPRING;
         shape.currentWidth += (shape.width - shape.currentWidth) * SHAPE_SPRING;
         shape.currentHeight += (shape.height - shape.currentHeight) * SHAPE_SPRING;
         shape.intro += (1 - shape.intro) * 0.14;
 
-        if (
-          Math.abs(shape.x - shape.currentX) > SHAPE_SETTLE_EPSILON ||
-          Math.abs(shape.y - shape.currentY) > SHAPE_SETTLE_EPSILON ||
+        if (isScrapbookVisible() && (
+          Math.abs(targetX - shape.currentX) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(targetY - shape.currentY) > SHAPE_SETTLE_EPSILON ||
           Math.abs(shape.width - shape.currentWidth) > SHAPE_SETTLE_EPSILON ||
           Math.abs(shape.height - shape.currentHeight) > SHAPE_SETTLE_EPSILON ||
           Math.abs(1 - shape.intro) > 0.02
-        ) {
+        )) {
           keepAnimating = true;
         }
       });
 
-      renderScrapbook();
+      if (isScrapbookVisible()) {
+        renderScrapbook();
+      }
 
       if (keepAnimating) {
         queueAnimation();
@@ -1351,11 +1373,15 @@
         height,
         x: Math.min(x, pageWidth - width - 20),
         y,
+        homeX: Math.min(x, pageWidth - width - 20),
+        homeY: y,
         currentX: Math.min(x, pageWidth - width - 20) + 18,
         currentY: y - 32,
         currentWidth: width * 0.82,
         currentHeight: height * 0.82,
-        intro: 0
+        intro: 0,
+        driftPhaseX: Math.random() * Math.PI * 2,
+        driftPhaseY: Math.random() * Math.PI * 2
       });
 
       queueAnimation();
@@ -1398,6 +1424,8 @@
       event.preventDefault();
       shape.x = clamp(event.clientX - pageRect.left - dragState.offsetX, 0, pageRect.width - shape.width - 6);
       shape.y = clamp(event.clientY - pageRect.top - dragState.offsetY, 56, pageRect.height - shape.height - 12);
+      shape.homeX = shape.x;
+      shape.homeY = shape.y;
       shape.currentX = shape.x;
       shape.currentY = shape.y;
       renderScrapbook();
