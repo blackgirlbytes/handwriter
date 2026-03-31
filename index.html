@@ -589,10 +589,10 @@
     }
 
     .shape-card.heart .shape-resize-handle {
-      left: auto;
-      right: 28px;
-      bottom: 38px;
-      transform: none;
+      left: 50%;
+      right: auto;
+      bottom: 12px;
+      transform: translateX(-50%);
     }
 
     .scrapbook-empty-tip {
@@ -1175,7 +1175,7 @@
       }
 
       if (shapeType === 'heart') {
-        return { left: 20, right: 20, top: 32, bottom: 22 };
+        return { left: 20, right: 20, top: 32, bottom: 48 };
       }
 
       return { left: 16, right: 16, top: 14, bottom: 14 };
