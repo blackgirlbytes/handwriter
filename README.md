@@ -1,9 +1,15 @@
 # handwriter
 
-Run the app with:
+Create a `.env` file from `.env.example` and add your key:
 
 ```bash
-OPENAI_API_KEY=your_key_here npm start
+cp .env.example .env
+```
+
+Then run the app with:
+
+```bash
+npm start
 ```
 
 Then open [http://localhost:3000](http://localhost:3000).

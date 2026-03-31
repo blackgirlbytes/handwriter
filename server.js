@@ -2,6 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import 'dotenv/config';
 import OpenAI from 'openai';
 
 const __filename = fileURLToPath(import.meta.url);
