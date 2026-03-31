@@ -506,7 +506,20 @@
       width: 160px;
       min-height: 144px;
       background: #edc6bf;
-      clip-path: path('M80 142 C65 126 20 95 20 56 C20 32 37 18 56 18 C69 18 78 26 80 35 C82 26 91 18 104 18 C123 18 140 32 140 56 C140 95 95 126 80 142 Z');
+      clip-path: polygon(
+        50% 100%,
+        18% 72%,
+        7% 52%,
+        9% 28%,
+        23% 12%,
+        36% 12%,
+        50% 24%,
+        64% 12%,
+        77% 12%,
+        91% 28%,
+        93% 52%,
+        82% 72%
+      );
       transform: rotate(-5deg);
       padding: 2rem 1.25rem 1rem;
       text-align: center;
@@ -1095,6 +1108,7 @@
     // Font for shape text - matches .shape-card-text CSS (0.9rem = 14.4px)
     const SHAPE_TEXT_FONT = '14.4px "IBM Plex Sans", sans-serif';
     const SHAPE_LINE_HEIGHT = 19.44; // 14.4px * 1.35 line-height
+    const SHAPE_TEXT_MIN_WIDTH = 30;
 
     // Get available text width at a given Y position within a shape
     // Y is relative to the top of the text area (after title)
@@ -1127,43 +1141,85 @@
       }
       
       if (type === 'heart') {
-        // Heart clip-path: M80 142 C65 126 20 95 20 56 C20 32 37 18 56 18 C69 18 78 26 80 35 C82 26 91 18 104 18 C123 18 140 32 140 56 C140 95 95 126 80 142 Z
-        // Heart is 160px wide, path goes from x=20 to x=140
-        // Approximate the heart shape at different Y levels
         const absoluteY = y + paddingTop;
-        
-        // Heart path bounds: top at y≈18, bottom at y=142, widest around y≈56-80
-        if (absoluteY < 18 || absoluteY > 142) return 0;
-        
-        let leftEdge, rightEdge;
-        
-        if (absoluteY <= 56) {
-          // Top lobes region (y: 18-56) - two bumps
-          // Width increases from narrow at top to widest around y=56
-          const t = (absoluteY - 18) / (56 - 18); // 0 at y=18, 1 at y=56
-          // At y=18: roughly x=56 to x=104 (width ~48)
-          // At y=56: roughly x=20 to x=140 (width ~120)
-          const halfWidth = 24 + t * 36; // 24 to 60
-          leftEdge = 80 - halfWidth;
-          rightEdge = 80 + halfWidth;
+
+        if (absoluteY < shapeHeight * 0.12 || absoluteY > shapeHeight) return 0;
+
+        const normalizedY = absoluteY / shapeHeight;
+        let halfWidthRatio;
+
+        if (normalizedY <= 0.24) {
+          halfWidthRatio = 0.16 + ((normalizedY - 0.12) / 0.12) * 0.12;
+        } else if (normalizedY <= 0.52) {
+          halfWidthRatio = 0.28 + ((normalizedY - 0.24) / 0.28) * 0.16;
         } else {
-          // Bottom triangle region (y: 56-142) - narrows to point
-          const t = (absoluteY - 56) / (142 - 56); // 0 at y=56, 1 at y=142
-          // At y=56: x=20 to x=140 (width ~120)
-          // At y=142: x=80 (width 0, it's the point)
-          const halfWidth = 60 * (1 - t);
-          leftEdge = 80 - halfWidth;
-          rightEdge = 80 + halfWidth;
+          halfWidthRatio = 0.44 * (1 - ((normalizedY - 0.52) / 0.48));
         }
-        
-        // Account for padding
+
+        const cx = shapeWidth / 2;
+        const halfWidth = shapeWidth * Math.max(0, halfWidthRatio);
+        const leftEdge = cx - halfWidth;
+        const rightEdge = cx + halfWidth;
         const effectiveLeft = Math.max(leftEdge, paddingLeft);
         const effectiveRight = Math.min(rightEdge, shapeWidth - paddingRight);
-        
+
         return Math.max(0, effectiveRight - effectiveLeft);
       }
       
       return shapeWidth - paddingLeft - paddingRight;
+    }
+
+    function getShapePadding(shapeType) {
+      if (shapeType === 'circle') {
+        return { left: 16, right: 16, top: 14.4, bottom: 14.4 };
+      }
+
+      if (shapeType === 'heart') {
+        return { left: 20, right: 20, top: 32, bottom: 22 };
+      }
+
+      return { left: 16, right: 16, top: 14, bottom: 14 };
+    }
+
+    function appendShapeText(textEl, shape) {
+      const prepared = prepareWithSegments(shape.text, SHAPE_TEXT_FONT, { whiteSpace: 'normal' });
+      const padding = getShapePadding(shape.type);
+      const titleHeight = 20;
+      const textAreaTop = padding.top + titleHeight;
+      const textAreaHeight = shape.height - textAreaTop - padding.bottom;
+      let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+      let y = 0;
+      let guard = 0;
+
+      while (guard < 20 && y < textAreaHeight) {
+        guard += 1;
+        const availableWidth = getTextWidthAtY(
+          shape.type,
+          shape.width,
+          shape.height,
+          y + SHAPE_LINE_HEIGHT / 2,
+          padding.left,
+          padding.right,
+          textAreaTop
+        );
+
+        if (availableWidth < SHAPE_TEXT_MIN_WIDTH) {
+          y += SHAPE_LINE_HEIGHT;
+          continue;
+        }
+
+        const line = layoutNextLine(prepared, cursor, availableWidth);
+        if (!line) break;
+
+        const lineEl = document.createElement('div');
+        lineEl.style.textAlign = shape.type === 'sticky' ? 'left' : 'center';
+        lineEl.style.width = '100%';
+        lineEl.textContent = line.text;
+        textEl.appendChild(lineEl);
+
+        cursor = line.end;
+        y += SHAPE_LINE_HEIGHT;
+      }
     }
 
     function renderShapes() {
@@ -1190,64 +1246,7 @@
 
         const text = document.createElement('div');
         text.className = 'shape-card-text';
-
-        // Use Pretext to lay out text that fits within the shape
-        if (shape.type === 'sticky') {
-          // Sticky is rectangular, just use regular text flow
-          text.textContent = shape.text;
-        } else {
-          // For circle and heart, use Pretext to calculate line-by-line layout
-          const prepared = prepareWithSegments(shape.text, SHAPE_TEXT_FONT, { whiteSpace: 'normal' });
-          
-          // Padding values from CSS
-          const paddingLeft = shape.type === 'circle' ? 16 : 20;
-          const paddingRight = shape.type === 'circle' ? 16 : 20;
-          const paddingTop = shape.type === 'circle' ? 14.4 : 32;
-          const paddingBottom = shape.type === 'circle' ? 14.4 : 16;
-          
-          // Title height is approximately 12px + margin
-          const titleHeight = 20;
-          
-          // Calculate available height for text
-          const textAreaTop = paddingTop + titleHeight;
-          const textAreaHeight = shape.height - textAreaTop - paddingBottom;
-          
-          let cursor = { segmentIndex: 0, graphemeIndex: 0 };
-          let y = 0; // Y position relative to text container
-          let guard = 0;
-          
-          while (guard < 15 && y < textAreaHeight) {
-            guard++;
-            
-            // Get available width at this Y position
-            const availableWidth = getTextWidthAtY(
-              shape.type, 
-              shape.width, 
-              shape.height, 
-              y + SHAPE_LINE_HEIGHT / 2, // Use middle of line for width calculation
-              paddingLeft, 
-              paddingRight,
-              textAreaTop
-            );
-            
-            if (availableWidth < 30) {
-              y += SHAPE_LINE_HEIGHT;
-              continue;
-            }
-            
-            const line = layoutNextLine(prepared, cursor, availableWidth);
-            if (!line) break;
-            
-            const lineEl = document.createElement('div');
-            lineEl.style.textAlign = 'center';
-            lineEl.style.width = '100%';
-            lineEl.textContent = line.text;
-            text.appendChild(lineEl);
-            
-            cursor = line.end;
-            y += SHAPE_LINE_HEIGHT;
-          }
-        }
+        appendShapeText(text, shape);
 
         element.appendChild(title);
         element.appendChild(text);
