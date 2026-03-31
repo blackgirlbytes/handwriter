@@ -491,24 +491,39 @@
     .shape-card.circle {
       width: 144px;
       min-height: 144px;
-      background: #d8e2d0;
-      border-radius: 999px;
+      background: transparent;
       transform: rotate(6deg);
       text-align: center;
+      position: relative;
+      overflow: visible;
+    }
+
+    .shape-card.circle::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #d8e2d0;
+      border-radius: 999px;
+      z-index: 0;
     }
 
     .shape-card.heart {
       width: 160px;
       min-height: 144px;
-      background: #edc6bf;
-      clip-path: path('M80 142 C65 126 20 95 20 56 C20 32 37 18 56 18 C69 18 78 26 80 35 C82 26 91 18 104 18 C123 18 140 32 140 56 C140 95 95 126 80 142 Z');
+      background: transparent;
       transform: rotate(-5deg);
       padding: 2rem 1.25rem 1rem;
       text-align: center;
+      position: relative;
     }
 
     .shape-card.heart::before {
-      clip-path: inherit;
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #edc6bf;
+      clip-path: path('M80 142 C65 126 20 95 20 56 C20 32 37 18 56 18 C69 18 78 26 80 35 C82 26 91 18 104 18 C123 18 140 32 140 56 C140 95 95 126 80 142 Z');
+      z-index: 0;
     }
 
     .shape-card-title {
@@ -1040,6 +1055,61 @@
       return gaps;
     }
 
+    const SHAPE_TEXT_FONT = '14.4px IBM Plex Sans'; // 0.9rem
+    const SHAPE_LINE_HEIGHT = 19; // 0.9rem * 1.35
+
+    // Get the horizontal bounds (left inset, right inset) for a shape at a given y
+    function getShapeHorizontalBounds(type, width, height, y) {
+      if (type === 'sticky') {
+        // Rectangular with small padding
+        const padding = 16;
+        return { left: padding, right: width - padding };
+      }
+      
+      if (type === 'circle') {
+        // Circle equation: (x - cx)^2 + (y - cy)^2 = r^2
+        // Solve for x: x = cx ± sqrt(r^2 - (y - cy)^2)
+        const cx = width / 2;
+        const cy = height / 2;
+        const r = Math.min(cx, cy) - 8; // padding from edge
+        const dy = y - cy;
+        if (Math.abs(dy) >= r) return null; // outside circle
+        const dx = Math.sqrt(r * r - dy * dy);
+        return { left: cx - dx + 8, right: cx + dx - 8 };
+      }
+      
+      if (type === 'heart') {
+        // Heart is ~160x144, widest around y=56-80, narrows at top and bottom
+        // Approximate with ellipse-like curves for top lobes and triangle for bottom
+        const heartWidth = 160;
+        const heartHeight = 144;
+        
+        // Top section (two lobes) y: 18-70
+        if (y < 70) {
+          // Each lobe is roughly a circle, centers around x=56 and x=104, y=40
+          // Combined width varies - narrowest at very top, widest around y=50
+          const topProgress = Math.max(0, (y - 18) / 52); // 0 at y=18, 1 at y=70
+          const maxWidth = 100; // max usable width in top section
+          const widthAtY = maxWidth * Math.sin(topProgress * Math.PI * 0.6 + 0.3);
+          const center = heartWidth / 2;
+          const halfWidth = widthAtY / 2;
+          if (halfWidth < 15) return null;
+          return { left: center - halfWidth + 8, right: center + halfWidth - 8 };
+        }
+        
+        // Bottom section (triangle) y: 70-142
+        const bottomProgress = (y - 70) / 72; // 0 at y=70, 1 at y=142
+        const maxWidthAtTop = 120;
+        const widthAtY = maxWidthAtTop * (1 - bottomProgress * 0.85);
+        const center = heartWidth / 2;
+        const halfWidth = widthAtY / 2;
+        if (halfWidth < 15) return null;
+        return { left: center - halfWidth + 8, right: center + halfWidth - 8 };
+      }
+      
+      return { left: 16, right: width - 16 };
+    }
+
     function renderShapes() {
       floatingShapesEl.innerHTML = '';
 
@@ -1059,12 +1129,59 @@
         title.className = 'shape-card-title';
         title.textContent = shape.type;
 
-        const text = document.createElement('div');
-        text.className = 'shape-card-text';
-        text.textContent = shape.text;
+        // Use Pretext to layout text within the shape
+        const textContainer = document.createElement('div');
+        textContainer.className = 'shape-card-text';
+        textContainer.style.position = 'relative';
+        
+        if (shape.type === 'sticky') {
+          // Sticky notes are rectangular, just use regular text
+          textContainer.textContent = shape.text;
+        } else {
+          // For circle and heart, use Pretext to layout text line by line
+          const prepared = prepareWithSegments(shape.text, SHAPE_TEXT_FONT, { whiteSpace: 'normal' });
+          let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+          
+          // Calculate starting Y based on shape type
+          let startY = shape.type === 'circle' ? 24 : 32; // Start below the title
+          let y = startY;
+          let maxY = shape.type === 'circle' ? shape.height - 20 : shape.height - 30;
+          let guard = 0;
+          
+          while (guard < 20 && y < maxY) {
+            guard++;
+            const bounds = getShapeHorizontalBounds(shape.type, shape.width, shape.height, y);
+            if (!bounds) {
+              y += SHAPE_LINE_HEIGHT;
+              continue;
+            }
+            
+            const availableWidth = bounds.right - bounds.left;
+            if (availableWidth < 30) {
+              y += SHAPE_LINE_HEIGHT;
+              continue;
+            }
+            
+            const line = layoutNextLine(prepared, cursor, availableWidth);
+            if (!line) break;
+            
+            const lineEl = document.createElement('div');
+            lineEl.style.position = 'absolute';
+            lineEl.style.left = `${bounds.left - 16}px`; // Adjust for container padding
+            lineEl.style.top = `${y - startY}px`;
+            lineEl.style.width = `${availableWidth}px`;
+            lineEl.style.textAlign = 'center';
+            lineEl.style.whiteSpace = 'nowrap';
+            lineEl.textContent = line.text;
+            textContainer.appendChild(lineEl);
+            
+            cursor = line.end;
+            y += SHAPE_LINE_HEIGHT;
+          }
+        }
 
         element.appendChild(title);
-        element.appendChild(text);
+        element.appendChild(textContainer);
         element.addEventListener('pointerdown', startShapeDrag);
         floatingShapesEl.appendChild(element);
       });
