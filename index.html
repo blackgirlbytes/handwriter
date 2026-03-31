@@ -757,11 +757,15 @@
     let shapes = [];
     let dragState = null;
     let resizeState = null;
+    let animationFrameId = null;
+    let storyFontReady = false;
 
     const STORY_FONT = '26px Caveat';
     const STORY_LINE_HEIGHT = 33;
     const SHAPE_TYPES = ['sticky', 'circle', 'heart'];
     const BACKGROUND_TEXT = `The page begins with a quiet stream of writing, the kind that feels like a journal entry already living on the paper before anything new arrives. Then the uploaded handwriting comes in like found fragments, little memories that can be turned into floating keepsakes. Move them around and the rest of the page keeps adjusting, making room as if the paper itself is thinking about composition in real time. This is where pretext starts to feel useful instead of theoretical, because every line can become narrower or wider depending on what is drifting through the page.`;
+    const SHAPE_SPRING = 0.18;
+    const SHAPE_SETTLE_EPSILON = 0.35;
 
     lucide.createIcons();
 
@@ -977,8 +981,8 @@
       addShapeBtn.disabled = !text.trim();
     }
 
-    async function renderScrapbook() {
-      await document.fonts.load(STORY_FONT);
+    function renderScrapbook() {
+      if (!storyFontReady) return;
 
       scrapbookBadgeEl.textContent = latestRecognizedText.trim()
         ? currentMode === 'upload' ? 'Latest source: uploaded handwriting' : 'Latest source: live handwriting'
@@ -990,6 +994,68 @@
 
       renderBackgroundStory();
       renderShapes();
+    }
+
+    function getRenderedShape(shape) {
+      return {
+        ...shape,
+        x: shape.currentX ?? shape.x,
+        y: shape.currentY ?? shape.y,
+        width: shape.currentWidth ?? shape.width,
+        height: shape.currentHeight ?? shape.height,
+        intro: shape.intro ?? 1
+      };
+    }
+
+    function queueAnimation() {
+      if (animationFrameId !== null) return;
+      animationFrameId = requestAnimationFrame(stepShapeAnimations);
+    }
+
+    function stepShapeAnimations() {
+      animationFrameId = null;
+      let keepAnimating = false;
+
+      shapes.forEach((shape) => {
+        const isActive = dragState?.id === shape.id || resizeState?.id === shape.id;
+
+        if (shape.currentX == null) shape.currentX = shape.x;
+        if (shape.currentY == null) shape.currentY = shape.y;
+        if (shape.currentWidth == null) shape.currentWidth = shape.width;
+        if (shape.currentHeight == null) shape.currentHeight = shape.height;
+        if (shape.intro == null) shape.intro = 1;
+
+        if (isActive) {
+          shape.currentX = shape.x;
+          shape.currentY = shape.y;
+          shape.currentWidth = shape.width;
+          shape.currentHeight = shape.height;
+          shape.intro = 1;
+          return;
+        }
+
+        shape.currentX += (shape.x - shape.currentX) * SHAPE_SPRING;
+        shape.currentY += (shape.y - shape.currentY) * SHAPE_SPRING;
+        shape.currentWidth += (shape.width - shape.currentWidth) * SHAPE_SPRING;
+        shape.currentHeight += (shape.height - shape.currentHeight) * SHAPE_SPRING;
+        shape.intro += (1 - shape.intro) * 0.14;
+
+        if (
+          Math.abs(shape.x - shape.currentX) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(shape.y - shape.currentY) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(shape.width - shape.currentWidth) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(shape.height - shape.currentHeight) > SHAPE_SETTLE_EPSILON ||
+          Math.abs(1 - shape.intro) > 0.02
+        ) {
+          keepAnimating = true;
+        }
+      });
+
+      renderScrapbook();
+
+      if (keepAnimating) {
+        queueAnimation();
+      }
     }
 
     function renderBackgroundStory() {
@@ -1057,12 +1123,15 @@
     }
 
     function getObstacleRects() {
-      return shapes.map(shape => ({
-        left: shape.x - 14,
-        right: shape.x + shape.width + 14,
-        top: shape.y - 10,
-        bottom: shape.y + shape.height + 10
-      }));
+      return shapes.map((shape) => {
+        const renderedShape = getRenderedShape(shape);
+        return {
+          left: renderedShape.x - 14,
+          right: renderedShape.x + renderedShape.width + 14,
+          top: renderedShape.y - 10,
+          bottom: renderedShape.y + renderedShape.height + 10
+        };
+      });
     }
 
     function getAvailableGaps(obstacles, y, totalWidth) {
@@ -1226,6 +1295,7 @@
       floatingShapesEl.innerHTML = '';
 
       shapes.forEach((shape) => {
+        const renderedShape = getRenderedShape(shape);
         const element = document.createElement('div');
         element.className = `shape-card ${shape.type}`;
         if (dragState?.id === shape.id) {
@@ -1235,10 +1305,12 @@
           element.classList.add('is-resizing');
         }
         element.dataset.shapeId = shape.id;
-        element.style.left = `${shape.x}px`;
-        element.style.top = `${shape.y}px`;
-        element.style.width = `${shape.width}px`;
-        element.style.height = `${shape.height}px`;
+        element.style.left = `${renderedShape.x}px`;
+        element.style.top = `${renderedShape.y}px`;
+        element.style.width = `${renderedShape.width}px`;
+        element.style.height = `${renderedShape.height}px`;
+        element.style.opacity = `${0.4 + renderedShape.intro * 0.6}`;
+        element.style.transform = `${shape.type === 'sticky' ? 'rotate(-3deg)' : shape.type === 'circle' ? 'rotate(6deg)' : 'rotate(-5deg)'} scale(${0.82 + renderedShape.intro * 0.18})`;
 
         const title = document.createElement('div');
         title.className = 'shape-card-title';
@@ -1246,7 +1318,7 @@
 
         const text = document.createElement('div');
         text.className = 'shape-card-text';
-        appendShapeText(text, shape);
+        appendShapeText(text, renderedShape);
 
         element.appendChild(title);
         element.appendChild(text);
@@ -1278,9 +1350,15 @@
         width,
         height,
         x: Math.min(x, pageWidth - width - 20),
-        y
+        y,
+        currentX: Math.min(x, pageWidth - width - 20) + 18,
+        currentY: y - 32,
+        currentWidth: width * 0.82,
+        currentHeight: height * 0.82,
+        intro: 0
       });
 
+      queueAnimation();
       renderScrapbook();
     }
 
@@ -1320,6 +1398,8 @@
       event.preventDefault();
       shape.x = clamp(event.clientX - pageRect.left - dragState.offsetX, 0, pageRect.width - shape.width - 6);
       shape.y = clamp(event.clientY - pageRect.top - dragState.offsetY, 56, pageRect.height - shape.height - 12);
+      shape.currentX = shape.x;
+      shape.currentY = shape.y;
       renderScrapbook();
     }
 
@@ -1329,6 +1409,7 @@
       document.removeEventListener('pointerup', endShapeDrag);
       document.removeEventListener('pointercancel', endShapeDrag);
       dragState = null;
+      queueAnimation();
       renderScrapbook();
     }
 
@@ -1370,6 +1451,8 @@
       event.preventDefault();
       shape.width = clamp(nextWidth, minWidth, maxWidth);
       shape.height = clamp(nextHeight, minHeight, maxHeight);
+      shape.currentWidth = shape.width;
+      shape.currentHeight = shape.height;
       renderScrapbook();
     }
 
@@ -1379,6 +1462,7 @@
       document.removeEventListener('pointerup', endShapeResize);
       document.removeEventListener('pointercancel', endShapeResize);
       resizeState = null;
+      queueAnimation();
       renderScrapbook();
     }
 
@@ -1457,7 +1541,10 @@
       }
     }
 
-    renderScrapbook();
+    document.fonts.load(STORY_FONT).then(() => {
+      storyFontReady = true;
+      renderScrapbook();
+    });
   </script>
 </body>
 </html>
